@@ -66,6 +66,11 @@ def set_environment_options(param_options):
     param_options["OS"] = operating_sys
     param_options["release"] = release
 
+    try:
+        username = os.environ["USERNAME"]
+    except KeyError:
+        username = os.environ["USERPROFILE"].split("\\")[-1]
+
     if "fs" in param_options:
         user_env_var = ["TEMP", "USERPROFILE", "APPDATA", "LOCALAPPDADATA", "TMP"]
         fs = []
@@ -79,7 +84,7 @@ def set_environment_options(param_options):
                 if env_var in user_env_var:
                     if param_options["recursively"]:
                         path = d.replace("%" + env_var + "%", os.environ[env_var])
-                        path = path.replace(os.environ["USERNAME"], "*")
+                        path = path.replace(username, "*")
 
                         for p in glob.glob(path):
                             fs.append(p + '|'+depth)
@@ -300,7 +305,7 @@ def main(param_options):
  | | | (_| \__ \ |_ _| |_| | \ \
  |_|  \__,_|___/\__|_____|_|  \_\
 
-      A forensic analysis tool
+     A forensic analysis tool
     """
     import time
     time.sleep(2)
