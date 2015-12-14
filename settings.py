@@ -57,6 +57,7 @@ WORDSIZE = 2
 DWORDSIZE = 4
 
 USERS_FOLDER = {
+    "Windows10": "C:\\Users",
     "Windows8": "C:\\Users",
     "Windows7": "C:\\Users",
     "Windows2012Server":"C:\\User",

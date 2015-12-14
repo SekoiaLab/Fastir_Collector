@@ -15,7 +15,7 @@ class Windows10Files(_FS):
         return super(Windows10Files, self)._list_named_pipes()
 
     def _list_windows_prefetch(self):
-        return super(Windows10Files, self)._list_windows_prefetch()
+        return super(Windows10Files, self)._list_windows_prefetch(True)
 
     def _chrome_history(self):
         return super(Windows10Files, self)._chrome_history(
@@ -29,7 +29,7 @@ class Windows10Files(_FS):
         super(Windows10Files, self)._csv_list_named_pipes(self._list_named_pipes())
 
     def csv_print_list_windows_prefetch(self):
-        super(Windows10Files, self)._csv_windows_prefetch(self._list_windows_prefetch(True))
+        super(Windows10Files, self)._csv_windows_prefetch(self._list_windows_prefetch())
 
     def csv_skype_history(self):
         super(Windows10Files, self)._skype_history(['AppData\Roaming\Skype'])
