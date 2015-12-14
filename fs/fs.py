@@ -7,6 +7,8 @@ import logging
 import os
 import sqlite3
 import traceback
+import ctypes
+import struct
 
 from utils.utils import get_int_from_reversed_string, look_for_outlook_dirs, \
     look_for_files, zip_archive, get_csv_writer, write_to_csv, record_sha256_logs
@@ -55,7 +57,7 @@ class _FS(object):
             offset += 2
         return list_str
 
-    def _list_windows_prefetch(self):
+    def _list_windows_prefetch(self, is_compressed=False):
         """Outputs windows prefetch files in a csv"""
         """See http://www.forensicswiki.org/wiki/Windows_Prefetch_File_Format"""
         prefetch_path = self.systemroot + '\Prefetch\*.pf'
@@ -66,6 +68,31 @@ class _FS(object):
             with open(prefetch_file, 'rb') as file_input:
                 content = file_input.read()
             try:
+                if is_compressed:
+                    header = content[:8]
+                    content = content[8:]
+                    signature, uncompressed_size = struct.unpack('<LL', header)
+                    algo = (signature & 0x0F000000) >> 24
+                    RtlDecompressBufferEx = ctypes.windll.ntdll.RtlDecompressBufferEx
+                    RtlGetCompressionWorkSpaceSize = ctypes.windll.ntdll.RtlGetCompressionWorkSpaceSize
+                    CompressBufferWorkSpaceSize = ctypes.c_uint32()
+                    CompressFragmentWorkSpaceSize = ctypes.c_uint32()
+                    RtlGetCompressionWorkSpaceSize(algo, ctypes.byref(CompressBufferWorkSpaceSize),
+                                                   ctypes.byref(CompressFragmentWorkSpaceSize))
+                    Compressed = (ctypes.c_ubyte * len(content)).from_buffer_copy(content)
+                    Uncompressed = (ctypes.c_ubyte * uncompressed_size)()
+                    FinalUncompressedSize = ctypes.c_uint32()
+                    Workspace = (ctypes.c_ubyte * CompressFragmentWorkSpaceSize.value)()
+                    ntstatus = RtlDecompressBufferEx(
+                            ctypes.c_uint16(algo),
+                            ctypes.byref(Uncompressed),
+                            ctypes.c_uint32(uncompressed_size),
+                            ctypes.byref(Compressed),
+                            ctypes.c_uint32(len(content)),
+                            ctypes.byref(FinalUncompressedSize),
+                            ctypes.byref(Workspace))
+                    uncompressed = list(Uncompressed)
+                    content = b"".join([chr(c) for c in uncompressed])
                 format_version = content[:4]
                 format_version = get_int_from_reversed_string(format_version)
                 # scca_sig = content[0x4:][:4]
@@ -129,10 +156,8 @@ class _FS(object):
         return files_list
 
     def __data_from_userprofile(self, zipname, directories_to_search):
-        """
-        Retrieves data from userprofile.
-        Creates a zip archive containing windows from the directories given in parameters.
-        """
+        """Retrieves data from userprofile.
+        Creates a zip archive containing windows from the directories given in parameters."""
         userprofiles = get_userprofiles_from_reg()
         # File mode is write and truncate for the first iteration, append after
         file_mode = 'w'

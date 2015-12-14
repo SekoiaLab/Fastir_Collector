@@ -29,7 +29,7 @@ class Windows10Files(_FS):
         super(Windows10Files, self)._csv_list_named_pipes(self._list_named_pipes())
 
     def csv_print_list_windows_prefetch(self):
-        super(Windows10Files, self)._csv_windows_prefetch(self._list_windows_prefetch())
+        super(Windows10Files, self)._csv_windows_prefetch(self._list_windows_prefetch(True))
 
     def csv_skype_history(self):
         super(Windows10Files, self)._skype_history(['AppData\Roaming\Skype'])
@@ -39,7 +39,6 @@ class Windows10Files(_FS):
                                                 'AppData\Local\Microsoft\Windows\*\Low\History.IE5'])
 
     def csv_firefox_downloads(self):
-        # TODO: make sure it works
         super(Windows10Files, self)._firefox_downloads(
             ['AppData\Roaming\Mozilla\Firefox\Profiles\*.default\downloads.sqlite'])
 
