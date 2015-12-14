@@ -439,7 +439,7 @@ def process_size(size_str):
 def record_sha256_logs(fr, fw):
     with open(fw, "a") as hash_file:
         m = process_sha256(fr)
-        hash_file.write(fr + "," + m.hexdigest() + "\n")
+        hash_file.write(fr + "," + m + "\n")
         hash_file.close()
 
 
