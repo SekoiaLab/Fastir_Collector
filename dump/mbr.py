@@ -96,7 +96,7 @@ class Mbr:
 
     def save_mbr(self, image):
         file_image = open(image, "rb")
-        file_mbr = open(self.path + os.path.sep + "mbr", "wb")
+        file_mbr = open(self.path + os.path.sep + "mbr_raw", "wb")
         try:
             file_mbr.write(file_image.read(512))
         except Exception as err:
