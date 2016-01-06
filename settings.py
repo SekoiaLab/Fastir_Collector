@@ -59,12 +59,15 @@ DWORDSIZE = 4
 USERS_FOLDER = {
     "Windows10": "C:\\Users",
     "Windows8": "C:\\Users",
+    "Windows8_1": "C:\\Users",
     "Windows7": "C:\\Users",
     "Windows2012Server":"C:\\User",
+    "Windows2012ServerR2":"C:\\User",
     "WindowsXP": "C:\\Users",
     "WindowsVista": "C:\\Users",
     "Windows2008ServerR2": "C:\\Users",
-    "Windows2008ServerR2": "C:\\Users",
+    "Windows2008Server": "C:\\Users",
     "WindowsXP": "C\Documents and Settings",
-    "Windows2003Server": "C\Documents and Settings"
+    "Windows2003Server": "C\Documents and Settings",
+    "Windows2003ServerR2": "C\Documents and Settings"
 }

@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 import codecs
-from utils.utils import get_int_from_reversed_string, convert_windate, dosdate, get_csv_writer, write_list_to_csv
+from utils.utils import convert_windate, dosdate, get_csv_writer, write_list_to_csv
 import registry_obj
 from win32com.shell import shell
 import struct
@@ -56,14 +56,14 @@ def csv_user_assist_value_decode_win7_and_after(str_value_datatmp, count_offset)
     """The value in user assist has changed since Win7. It is taken into account here."""
     # 16 bytes data
     str_value_data_session = str_value_datatmp[0:4]
-    str_value_data_session = unicode(get_int_from_reversed_string(str_value_data_session))
+    str_value_data_session = unicode(struct.unpack("<I", str_value_data_session)[0])
     str_value_data_count = str_value_datatmp[4:8]
-    str_value_data_count = unicode(get_int_from_reversed_string(str_value_data_count) + count_offset + 1)
+    str_value_data_count = unicode(struct.unpack("<I", str_value_data_count)[0] + count_offset + 1)
     str_value_data_focus = str_value_datatmp[12:16]
-    str_value_data_focus = unicode(get_int_from_reversed_string(str_value_data_focus))
+    str_value_data_focus = unicode(struct.unpack("<I", str_value_data_focus)[0])
     str_value_data_timestamp = str_value_datatmp[60:68]
     try:
-        timestamp = get_int_from_reversed_string(str_value_data_timestamp)
+        timestamp = struct.unpack("<I", str_value_data_timestamp)[0]
         date_last_exec = convert_windate(timestamp)
     except ValueError:
         date_last_exec = None
@@ -88,12 +88,12 @@ def csv_user_assist_value_decode_before_win7(str_value_datatmp, count_offset):
 
     # 16 bytes data
     str_value_data_session = str_value_datatmp[0:4]
-    str_value_data_session = unicode(get_int_from_reversed_string(str_value_data_session))
+    str_value_data_session = unicode(struct.unpack("<I", str_value_data_session)[0])
     str_value_data_count = str_value_datatmp[4:8]
-    str_value_data_count = unicode(get_int_from_reversed_string(str_value_data_count) + count_offset + 1)
+    str_value_data_count = unicode(struct.unpack("<I", str_value_data_count)[0] + count_offset + 1)
     str_value_data_timestamp = str_value_datatmp[8:16]
     try:
-        timestamp = get_int_from_reversed_string(str_value_data_timestamp)
+        timestamp = struct.unpack("<I", str_value_data_timestamp)[0]
         date_last_exec = convert_windate(timestamp)
     except ValueError:
         date_last_exec = None

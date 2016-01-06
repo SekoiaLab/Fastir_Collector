@@ -10,8 +10,8 @@ import traceback
 import ctypes
 import struct
 
-from utils.utils import get_int_from_reversed_string, look_for_outlook_dirs, \
-    look_for_files, zip_archive, get_csv_writer, write_to_csv, record_sha256_logs
+from utils.utils import look_for_outlook_dirs, look_for_files, zip_archive, get_csv_writer, write_to_csv, \
+    record_sha256_logs
 from registry.registry_obj import get_userprofiles_from_reg
 from utils.utils_rawstring import sekoiamagic
 from win32com.shell import shell, shellcon
@@ -33,28 +33,27 @@ class _FS(object):
     def __decode_section_a(self, format_version, content, section_a):
         hash_table = dict()
         if format_version == 17:
-            hash_table['start_time'] = get_int_from_reversed_string(content[section_a:section_a + 4])
-            hash_table['duration'] = get_int_from_reversed_string(content[section_a + 4:section_a + 4 + 4])
+            hash_table['start_time'] = struct.unpack("<I", content[section_a:section_a + 4])[0]
+            hash_table['duration'] = struct.unpack("<I", content[section_a + 4:section_a + 4 + 4])[0]
             hash_table['average_duration'] = ''
-            hash_table['filename_offset'] = get_int_from_reversed_string(content[section_a + 8:section_a + 8 + 4])
-            hash_table['filename_nb_char'] = get_int_from_reversed_string(content[section_a + 12:section_a + 12 + 4])
+            hash_table['filename_offset'] = struct.unpack("<I", content[section_a + 8:section_a + 8 + 4])[0]
+            hash_table['filename_nb_char'] = struct.unpack("<I", content[section_a + 12:section_a + 12 + 4])[0]
         else:
-            hash_table['start_time'] = get_int_from_reversed_string(content[section_a:section_a + 4])
-            hash_table['duration'] = get_int_from_reversed_string(content[section_a + 4:section_a + 4 + 4])
-            hash_table['average_duration'] = get_int_from_reversed_string(content[section_a + 8:section_a + 8 + 4])
-            hash_table['filename_offset'] = get_int_from_reversed_string(content[section_a + 12:section_a + 12 + 4])
-            hash_table['filename_nb_char'] = get_int_from_reversed_string(content[section_a + 16:section_a + 16 + 4])
+            hash_table['start_time'] = struct.unpack("<I", content[section_a:section_a + 4])[0]
+            hash_table['duration'] = struct.unpack("<I", content[section_a + 4:section_a + 4 + 4])[0]
+            hash_table['average_duration'] = struct.unpack("<I", content[section_a + 8:section_a + 8 + 4])[0]
+            hash_table['filename_offset'] = struct.unpack("<I", content[section_a + 12:section_a + 12 + 4])[0]
+            hash_table['filename_nb_char'] = struct.unpack("<I", content[section_a + 16:section_a + 16 + 4])[0]
         return hash_table
 
     def __decode_section_c(self, content, section_c, length_c):
-        offset = 0
-        str_start = 0
-        list_str = []
-        while offset < length_c:
-            if content[section_c + offset] == b'\0' and content[section_c + offset + 1] == b'\0':
-                list_str.append(content[section_c + str_start:section_c + offset + 2].decode('utf-16-le'))
-                str_start = offset + 2
-            offset += 2
+        try:
+            list_str = content[section_c:section_c + length_c].decode('utf-16-le').split("\x00")
+        except UnicodeDecodeError as e:
+            list_str = content[section_c:section_c + e.start].decode('utf-16-le').split("\x00")
+
+        if len(list_str[-1]) == 0:  # remove trailing string
+            list_str = list_str[:-1]
         return list_str
 
     def _list_windows_prefetch(self, is_compressed=False):
@@ -94,53 +93,55 @@ class _FS(object):
                     uncompressed = list(Uncompressed)
                     content = b"".join([chr(c) for c in uncompressed])
                 format_version = content[:4]
-                format_version = get_int_from_reversed_string(format_version)
+                format_version = struct.unpack("<I", format_version)[0]
                 # scca_sig = content[0x4:][:4]
                 unknown_values = content[0x0008:0x0008 + 4]
                 unknown_values = ' '.join(c.encode('hex') for c in unknown_values)
                 file_size = content[0x000c:0x000c + 4]
-                file_size = get_int_from_reversed_string(file_size)
+                file_size = struct.unpack("<I", file_size)
                 exec_name = content[0x0010:0x0010 + 60]
-                for i in range(30):  # 60 / 2
-                    if 2 * i + 1 < len(exec_name):
-                        if exec_name[2 * i] == '\x00' and exec_name[2 * i + 1] == '\x00':
-                            exec_name = exec_name[:2 * (i + 1)].decode('utf-16-le')
+                exec_name = exec_name.decode('utf-16-le').replace("\x00", "")
+                exec_name= exec_name.split('.EXE')[0] + '.EXE'
                 prefetch_hash = content[0x004c:0x004c + 4]
                 tc = os.path.getctime(prefetch_file)
                 tm = os.path.getmtime(prefetch_file)
 
-                section_a = get_int_from_reversed_string(content[0x0054:0x0054 + 4])
-                num_entries_a = get_int_from_reversed_string(content[0x0058:0x0058 + 4])
-                section_b = get_int_from_reversed_string(content[0x005c:0x005c + 4])
-                num_entries_b = get_int_from_reversed_string(content[0x0060:0x0060 + 4])
-                section_c = get_int_from_reversed_string(content[0x0064:0x0064 + 4])
-                length_c = get_int_from_reversed_string(content[0x0068:0x0068 + 4])
-                section_d = get_int_from_reversed_string(content[0x006c:0x006c + 4])
-                num_entries_d = get_int_from_reversed_string(content[0x0070:0x0070 + 4])
-                length_d = get_int_from_reversed_string(content[0x0074:0x0074 + 4])
+                section_a = struct.unpack("<I", content[0x0054:0x0054 + 4])[0]
+                num_entries_a = struct.unpack("<I", content[0x0058:0x0058 + 4])[0]
+                section_b = struct.unpack("<I", content[0x005c:0x005c + 4])[0]
+                num_entries_b = struct.unpack("<I", content[0x0060:0x0060 + 4])[0]
+                section_c = struct.unpack("<I", content[0x0064:0x0064 + 4])[0]
+                length_c = struct.unpack("<I", content[0x0068:0x0068 + 4])[0]
+                section_d = struct.unpack("<I", content[0x006c:0x006c + 4])[0]
+                num_entries_d = struct.unpack("<I", content[0x0070:0x0070 + 4])[0]
+                length_d = struct.unpack("<I", content[0x0074:0x0074 + 4])[0]
 
                 if format_version == 17:
                     latest_exec_date = content[0x0078:0x0078 + 8]
-                    exec_count = get_int_from_reversed_string(content[0x0090:0x0090 + 4])
+                    exec_count = struct.unpack("<I", content[0x0090:0x0090 + 4])[0]
 
                 # section a
                 elif format_version == 23:
                     latest_exec_date = content[0x0080:0x0080 + 8]
-                    exec_count = get_int_from_reversed_string(content[0x0098:0x0098 + 4])
+                    exec_count = struct.unpack("<I", content[0x0098:0x0098 + 4])[0]
                 else:
                     # format version 26
                     latest_exec_date = []
                     for i in range(8):
                         latest_exec_date.append(content[0x0088 + i * 8:0x0088 + (i + 1) * 8])
-                    exec_count = get_int_from_reversed_string(content[0x00D0:0x00D0 + 4])
+                    exec_count = struct.unpack("<I", content[0x00D0:0x00D0 + 4])[0]
 
                 hash_table_a = self.__decode_section_a(format_version, content, section_a)
+                try:
+                    list_str_c = self.__decode_section_c(content, section_c, length_c)
+                    yield prefetch_file, format_version, file_size, exec_name, datetime.datetime.fromtimestamp(
+                            tc), datetime.datetime.fromtimestamp(tm), exec_count, hash_table_a, list_str_c
+                except:
+                    pass
 
-                list_str_c = self.__decode_section_c(content, section_c, length_c)
-                yield prefetch_file, format_version, file_size, exec_name, datetime.datetime.fromtimestamp(
-                    tc), datetime.datetime.fromtimestamp(tm), exec_count, hash_table_a, list_str_c
             except:
-                logging.error(traceback.format_exc())
+                self.logger.error(traceback.format_exc())
+                self.logger.error('Error decoding prefetc %s' % prefetch_file)
 
     def _filtered_magic(self, f):
         mime = sekoiamagic(f)
@@ -267,8 +268,8 @@ class _FS(object):
 
             for bin_file in files:
                 write_to_csv(
-                    [self.computer_name, 'recycle_bin', files.GetDisplayNameOf(bin_file, shellcon.SHGDN_NORMAL),
-                     files.GetDisplayNameOf(bin_file, shellcon.SHGDN_FORPARSING)], csv_writer)
+                        [self.computer_name, 'recycle_bin', files.GetDisplayNameOf(bin_file, shellcon.SHGDN_NORMAL),
+                         files.GetDisplayNameOf(bin_file, shellcon.SHGDN_FORPARSING)], csv_writer)
         record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_recycle_bin.csv',
                            self.output_dir + '\\' + self.computer_name + '_sha256.log')
 

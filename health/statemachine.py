@@ -9,7 +9,6 @@ import psutil
 from settings import NETWORK_ADAPTATER
 from utils.utils import write_to_output, get_csv_writer, write_to_csv, get_terminal_decoded_string, \
     record_sha256_logs
-import utils
 import win32process
 import wmi
 

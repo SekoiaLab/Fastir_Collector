@@ -14,9 +14,9 @@ import re
 import sys
 import traceback
 import yaml
-from utils.utils import mount_share, unmount_share
+from utils.utils import mount_share, unmount_share,get_os_version,change_char_set_os_environ
 from utils.vss import _VSS
-
+import wmi
 import factory.factory as factory
 from settings import USERS_FOLDER, EXTRACT_DUMP
 import settings
@@ -52,10 +52,22 @@ def set_logger(param_options):
     param_options["logger"] = logger
 
 
+def detect_os():
+    c = wmi.WMI()
+    version = []
+    for c in c.Win32_OperatingSystem():
+        version.append(c.Name)
+    name_version = version[0]
+
+
+
 def set_environment_options(param_options):
+    os.environ=change_char_set_os_environ(os.environ)
     operating_sys = platform.system()
+
     if operating_sys == settings.OS:
-        release, version, csd, ptype = platform.win32_ver(release="", version="", csd="", ptype="")
+        release = get_os_version()
+
     else:
         sys.stderr.write("OS not supported\n")
         sys.exit(1)
@@ -82,7 +94,7 @@ def set_environment_options(param_options):
             if result:
                 env_var = result.group(1)
                 if env_var in user_env_var:
-                    if param_options["recursively"]:
+                    if param_options["all_users"]:
                         path = d.replace("%" + env_var + "%", os.environ[env_var])
                         path = path.replace(username, "*")
 
@@ -142,7 +154,7 @@ def profile_used(path, param_options):
         param_options["zip"] = config.get("filecatcher", "zip")
         param_options["ext_file"] = config.get("filecatcher", "ext_file")
         param_options["zip_ext_file"] = config.get("filecatcher", "zip_ext_file")
-        param_options["recursively"] = yaml.load(config.get("filecatcher", "recursively"))
+        param_options["all_users"] = yaml.load(config.get("filecatcher", "all_users"))
         param_options['compare'] = config.get('filecatcher','compare')
 
     if config.has_section("dump"):

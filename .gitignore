@@ -1,3 +1,4 @@
 *.pyc
 *.conf
 build/pyinstaller/*
+.idea/*

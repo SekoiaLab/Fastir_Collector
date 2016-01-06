@@ -21,6 +21,7 @@ import csv
 import cStringIO
 import codecs
 import locale
+import ctypes
 
 
 class UnicodeWriter:
@@ -170,19 +171,6 @@ def dosdate(_dosdate, _dostime):
 
 def convert_string_to_hex(string):
     return "".join(c.encode("hex") for c in string)
-
-
-def reverse_string(string_to_reverse):
-    """Mainly used for little and big endian conversion"""
-    return "".join(c.encode("hex") for c in reversed(string_to_reverse))
-
-
-def get_int_from_reversed_string(reversed_string):
-    """Used for registry timestamp"""
-    if reversed_string != b"":
-        return int(reverse_string(reversed_string), 16)
-    else:
-        return 0
 
 
 def get_local_drives():
@@ -387,17 +375,17 @@ def create_driver_service(logger):
         driver = os.path.join(os.getcwd(), get_winpmem_name())
 
     h_scm = win32service.OpenSCManager(
-        None, None, win32service.SC_MANAGER_CREATE_SERVICE)
+            None, None, win32service.SC_MANAGER_CREATE_SERVICE)
 
     try:
         h_svc = win32service.CreateService(
-            h_scm, "pmem", "pmem",
-            win32service.SERVICE_ALL_ACCESS,
-            win32service.SERVICE_KERNEL_DRIVER,
-            win32service.SERVICE_DEMAND_START,
-            win32service.SERVICE_ERROR_IGNORE,
-            driver,
-            None, 0, None, None, None)
+                h_scm, "pmem", "pmem",
+                win32service.SERVICE_ALL_ACCESS,
+                win32service.SERVICE_KERNEL_DRIVER,
+                win32service.SERVICE_DEMAND_START,
+                win32service.SERVICE_ERROR_IGNORE,
+                driver,
+                None, 0, None, None, None)
     except win32service.error, e:
         logger.error(e)
         h_svc = win32service.OpenService(h_scm, "pmem",
@@ -447,8 +435,64 @@ def process_sha256(path):
     with open(path, "rb") as f:
         return hashlib.sha256(f.read()).hexdigest()
 
+
 def rot13(s):
     chars = "ABCDEFGHIJKLMabcdefghijklmNOPQRSTUVWXYZnopqrstuvwxyz"
     trans = "NOPQRSTUVWXYZnopqrstuvwxyzABCDEFGHIJKLMabcdefghijklm"
-    rot_char = lambda c: trans[chars.find(c)] if chars.find(c)>-1 else c
-    return ''.join( rot_char(c) for c in s )
+    rot_char = lambda c: trans[chars.find(c)] if chars.find(c) > -1 else c
+    return ''.join(rot_char(c) for c in s)
+
+
+class OSVERSIONINFOEXW(ctypes.Structure):
+    _fields_ = [('dwOSVersionInfoSize', ctypes.c_ulong),
+                ('dwMajorVersion', ctypes.c_ulong),
+                ('dwMinorVersion', ctypes.c_ulong),
+                ('dwBuildNumber', ctypes.c_ulong),
+                ('dwPlatformId', ctypes.c_ulong),
+                ('szCSDVersion', ctypes.c_wchar * 128),
+                ('wServicePackMajor', ctypes.c_ushort),
+                ('wServicePackMinor', ctypes.c_ushort),
+                ('wSuiteMask', ctypes.c_ushort),
+                ('wProductType', ctypes.c_byte),
+                ('wReserved', ctypes.c_byte)]
+
+
+_WIN_Release = {
+    (5, 1, 1): 'XP',
+    (5, 2, 1): 'XP',
+    (6, 0, 1): 'Vista',
+    (6, 1, 1): '7',
+    (6, 2, 1): '8',
+    (6, 3, 1): '8_1',
+    (10, 0, 1): '10',
+    (5, 2, 2): '2003Server',
+    (5, 2, 3): '2003Server',
+    (6, 0, 2): '2008Server',
+    (6, 0, 3): '2008Server',
+    (6, 1, 2): '2008ServerR2',
+    (6, 1, 3): '2008ServerR2',
+    (6, 2, 2): '2012Server',
+    (6, 2, 3): '2012Server',
+    (6, 3, 2): '2012ServerR2',
+    (6, 3, 3): '2012ServerR2',
+}
+
+
+def get_os_version():
+    """
+    Get's the OS major and minor versions.  Returns a tuple of
+    (OS_MAJOR, OS_MINOR, OS_PRODUCT_TYPE).
+    """
+    os_version = OSVERSIONINFOEXW()
+    os_version.dwOSVersionInfoSize = ctypes.sizeof(os_version)
+    retcode = ctypes.windll.Ntdll.RtlGetVersion(ctypes.byref(os_version))
+    if retcode != 0:
+        raise Exception("Failed to get OS version")
+
+    t = (os_version.dwMajorVersion, os_version.dwMinorVersion, os_version.wProductType)
+    if t in _WIN_Release:
+        return _WIN_Release[t]
+
+
+def change_char_set_os_environ(environ):
+    return {k: environ[k].decode(sys.getfilesystemencoding()) for k in environ.keys()}
