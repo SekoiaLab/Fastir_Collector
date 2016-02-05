@@ -8,7 +8,7 @@ type=csv
 destination=local
 dir=output
 [filecatcher]
-recursively=True
+all_users=True
 path=C:\Windows\temp|0,c:\tmp|0,c:\temp|0,c:\recycler|0,c:\Windows\system32\config\systemprofile|0,c:\Windows\system32\config\systemprofile\Appdata\Local\Temp|0,c:\Windows\system32\config\systemprofile\Appdata\Local|0,c:\Windows\system32\config\systemprofile\Appdata\Roaming|0,c:\Windows\ServiceProfiles\LocalService|0,c:\Windows\ServiceProfiles\LocalService\Appdata\Local\Temp|0,c:\Windows\ServiceProfiles\LocalService\Appdata\Local|0,c:\Windows\ServiceProfiles\LocalService\Appdata\Roaming|0,c:\Windows\ServiceProfiles\NetworkService|0,c:\Windows\ServiceProfiles\NetworkService\Appdata\Local\Temp|0,c:\Windows\ServiceProfiles\NetworkService\Appdata\Local|0,c:\Windows\ServiceProfiles\NetworkService\Appdata\Roaming|0,c:\Windows\sysnative\config\systemprofile|0,c:\Windows\sysnative\config\systemprofile\Appdata\Local\Temp|0,c:\Windows\sysnative\config\systemprofile\Appdata\Local|0,c:\Windows\sysnative\config\systemprofile\Appdata\Roaming|0,%USERPROFILE%|0,%USERPROFILE%\Appdata\Local\Temp|0,%USERPROFILE%\Appdata\Local|0,%USERPROFILE%\Appdata\Roaming|0,c:\users|0
 #path=%WINDIR%\System32
 mime_filter=application/msword;application/octet-stream;application/x-archive;application/x-ms-pe;application/x-ms-dos-executable;application/x-lha;application/x-dosexec;application/x-elc;application/x-executable, statically linked, stripped;application/x-gzip;application/x-object, not stripped;application/x-zip;image/bmp''image/gif;image/jpeg;image/png;text/html;text/rtf;text/xml;UTF-8 Unicode HTML document text, with CRLF line terminators;UTF-8 Unicode HTML document text, with very long lines, with CRLF, LF line terminators
@@ -30,4 +30,3 @@ cert_filtered_subject=subject;O=Microsoft Corporation|Microsoft Time-Stamp Servi
 [yara]
 filtered_yara=False
 dir_rules=yara-rules
-
