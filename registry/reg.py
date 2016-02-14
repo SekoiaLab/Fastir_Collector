@@ -63,7 +63,7 @@ def csv_user_assist_value_decode_win7_and_after(str_value_datatmp, count_offset)
     str_value_data_focus = unicode(struct.unpack("<I", str_value_data_focus)[0])
     str_value_data_timestamp = str_value_datatmp[60:68]
     try:
-        timestamp = struct.unpack("<I", str_value_data_timestamp)[0]
+        timestamp = struct.unpack("<Q", str_value_data_timestamp)[0]
         date_last_exec = convert_windate(timestamp)
     except ValueError:
         date_last_exec = None
@@ -93,7 +93,7 @@ def csv_user_assist_value_decode_before_win7(str_value_datatmp, count_offset):
     str_value_data_count = unicode(struct.unpack("<I", str_value_data_count)[0] + count_offset + 1)
     str_value_data_timestamp = str_value_datatmp[8:16]
     try:
-        timestamp = struct.unpack("<I", str_value_data_timestamp)[0]
+        timestamp = struct.unpack("<Q", str_value_data_timestamp)[0]
         date_last_exec = convert_windate(timestamp)
     except ValueError:
         date_last_exec = None
