@@ -8,9 +8,10 @@ import traceback
 import psutil
 from settings import NETWORK_ADAPTATER
 from utils.utils import write_to_output, get_csv_writer, write_to_csv, get_terminal_decoded_string, \
-    record_sha256_logs
+    record_sha256_logs, process_md5, process_sha1
 import win32process
 import wmi
+import datetime
 
 
 class _Statemachine(object):
@@ -152,6 +153,27 @@ class _Statemachine(object):
                     [self.computer_name, 'processes', unicode(pid), name, unicode(cmd), unicode(exe_path)],
                     csv_writer)
         record_sha256_logs(self.output_dir + '_processes.csv', self.output_dir + '_sha256.log')
+
+    def _csv_hash_running_process(self, list_running):
+        self.logger.info("Health : Hashing running processes")
+        with open(self.output_dir + '_hash_processes.csv', 'ab') as fw:
+            csv_writer = get_csv_writer(fw)
+            write_to_csv(["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "EXEC_PATH", "MD5", "SHA1", "CTIME", "MTIME", "ATIME"], csv_writer)
+            for p in list_running:
+                pid = p[0]
+                name = p[1]
+                cmd = p[2]
+                exe_path = p[3]
+                if exe_path <> None:
+                    ctime = datetime.datetime.fromtimestamp(os.path.getctime(exe_path))
+                    mtime = datetime.datetime.fromtimestamp(os.path.getmtime(exe_path))
+                    atime = datetime.datetime.fromtimestamp(os.path.getatime(exe_path))
+                    md5 = process_md5(unicode(exe_path))
+                    sha1 = process_sha1(unicode(exe_path))
+                    write_to_csv(
+                        [self.computer_name, 'processes', unicode(pid), name, unicode(exe_path), md5, sha1, ctime, mtime, atime],
+                        csv_writer)
+        record_sha256_logs(self.output_dir + '_hash_processes.csv', self.output_dir + '_sha256.log')
 
     def _csv_list_share(self, share):
         self.logger.info("Health : Listing shares")
