@@ -226,13 +226,16 @@ class _Memory(object):
         with open(self.output_dir + '\\' + self.computer_name + '_clipboard.csv', 'wb') as output:
             csv_writer = get_csv_writer(output)
             write_to_csv(["COMPUTER_NAME", "TYPE", "DATA"], csv_writer)
+
+            r = None    #initialize the local variable r
             try:
                 r = Tk()  # Using Tk instead because it supports exotic characters
                 data = r.selection_get(selection='CLIPBOARD')
                 r.destroy()
                 write_to_csv([self.computer_name, 'clipboard', unicode(data)], csv_writer)
             except:
-                r.destroy()
+                if r != None:   # Verify that r exist before calling destroy
+                    r.destroy()
                 win32clipboard.OpenClipboard()
                 clip = win32clipboard.EnumClipboardFormats(0)
                 while clip:
