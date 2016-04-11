@@ -1,12 +1,18 @@
 from __future__ import unicode_literals
 import codecs
-from utils.utils import convert_windate, dosdate, get_csv_writer, write_list_to_csv
+from utils.utils import convert_windate, dosdate, get_csv_writer, write_list_to_csv,process_hashes
 import registry_obj
 from win32com.shell import shell
 import struct
 import construct
 import StringIO
-
+import os
+from csv import reader
+from utils.vss import _VSS
+import re
+from utils.utils import regex_patern_path
+import os
+from filecatcher.archives import _Archives
 
 KEY_VALUE_STR = 0
 VALUE_NAME = 1
@@ -93,7 +99,7 @@ def csv_user_assist_value_decode_before_win7(str_value_datatmp, count_offset):
     str_value_data_count = unicode(struct.unpack("<I", str_value_data_count)[0] + count_offset + 1)
     str_value_data_timestamp = str_value_datatmp[8:16]
     try:
-        timestamp = struct.unpack("<Q", str_value_data_timestamp)[0]
+        timestamp = struct.unpack("<I", str_value_data_timestamp)[0]
         date_last_exec = convert_windate(timestamp)
     except ValueError:
         date_last_exec = None
@@ -143,11 +149,16 @@ def decode_itempos(itempos):
         itempos3_struct = construct.Struct("itempos3",
                                            construct.ULInt64("file_ref"),
                                            construct.Padding(8),
-                                           construct.Padding(2),
-                                           construct.Padding(4)
+                                           construct.Padding(2)
                                            )
         parse_res3 = itempos3_struct.parse_stream(itempos_io)
-        unicode_filename = itempos_io.read().decode("utf16")
+        if parse_ext["ext_version"] >= 0x8:
+            itempos4_struct = construct.Struct("itempos4",
+                                               construct.Padding(4)
+                                               )
+            itempos4_struct.parse_stream(itempos_io)
+        tmp = itempos_io.read()
+        unicode_filename = tmp.decode("utf16")
         if not unicode_filename.endswith("\0"):
             unicode_filename = unicode_filename[:-2]  # ditch last unused 2 bytes and \0 char
     elif parse_ext["ext_version"] >= 0x3:
@@ -157,9 +168,9 @@ def decode_itempos(itempos):
 
     timestamp_modified = dosdate(parse_res["dos_date"], parse_res["dos_time"]).strftime("%d/%m/%Y %H:%M:%S")
     timestamp_created = dosdate(parse_res2["creation_dos_date"], parse_res2["creation_dos_time"]).strftime(
-        "%d/%m/%Y %H:%M:%S")
+            "%d/%m/%Y %H:%M:%S")
     timestamp_access = dosdate(parse_res2["access_dos_date"], parse_res2["access_dos_time"]).strftime(
-        "%d/%m/%Y %H:%M:%S")
+            "%d/%m/%Y %H:%M:%S")
 
     return [unicode(parse_res["itempos_size"]), unicode(parse_res["filesize"]), timestamp_modified,
             parse_res["filename"], timestamp_created, timestamp_access, unicode_filename]
@@ -261,9 +272,21 @@ class _Reg(object):
         if params["output_dir"] and params["computer_name"]:
             self.computer_name = params["computer_name"]
             self.output_dir = params["output_dir"]
+        if params["custom_registry_keys"]:
+            self.exec_custom_registry_keys = True
+            self.custom_registry_keys = params["custom_registry_keys"]
+            self.registry_recursive = params["registry_recursive"]
+        else:
+            self.exec_custom_registry_keys = False
         self.logger = params["logger"]
+        self.systemroot = params['system_root']
         # get logged off users hives
         self.user_hives = []
+        self.vss = None
+        self.rand_ext = params['rand_ext']
+        self.get_autoruns = params['get_autoruns']
+
+    def init_win_xp(self):
         users = registry_obj.get_registry_key(registry_obj.HKEY_LOCAL_MACHINE,
                                               r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList")
         if users:
@@ -277,6 +300,29 @@ class _Reg(object):
                 except IOError:  # user is logged on or not a user
                     pass
 
+    def init_win_vista_and_above(self):
+        users = registry_obj.get_registry_key(registry_obj.HKEY_LOCAL_MACHINE,
+                                              r"SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList")
+        drive, p = os.path.splitdrive(self.systemroot)
+        params = {"logger": self.logger}
+        self.vss = _VSS._get_instance(params, drive)
+        if users:
+            for i in xrange(users.get_number_of_sub_keys()):
+                user = users.get_sub_key(i)
+                tmp = user.get_value_by_name("ProfileImagePath").get_data()
+                path = tmp.replace(drive, self.vss._return_root()) + r"\NTUSER.DAT"
+                path_usrclass = tmp.replace(drive,
+                                            self.vss._return_root()) + r"\AppData\Local\Microsoft\Windows\\UsrClass.dat"
+                try:
+                    regf_file = registry_obj.RegfFile()
+                    regf_file.open(path)
+                    regf_file_usrclass = registry_obj.RegfFile()
+                    regf_file_usrclass.open(path_usrclass)
+                    self.user_hives.append(
+                            (user.get_name(), regf_file.get_root_key(), regf_file_usrclass.get_root_key()))
+                except IOError:  # not a user
+                    pass
+
     def _generate_hklm_csv_list(self, to_csv_list, csv_type, path, is_recursive=True):
         """
         Generates a generic list suitable for CSV output.
@@ -285,6 +331,13 @@ class _Reg(object):
         hive_list = self._get_list_from_registry_key(registry_obj.HKEY_LOCAL_MACHINE, path, is_recursive=is_recursive)
         for item in hive_list:
             if item[KEY_VALUE_STR] == "VALUE":
+                try:
+                    value_data = item[VALUE_DATA].decode('UTF-16')
+                    if '\x00' not in value_data:
+                        value_data = item[VALUE_DATA]
+                except:
+                    value_data = item[VALUE_DATA]
+
                 to_csv_list.append((self.computer_name,
                                     csv_type,
                                     item[VALUE_LAST_WRITE_TIME],
@@ -293,7 +346,7 @@ class _Reg(object):
                                     item[VALUE_NAME],
                                     item[KEY_VALUE_STR],
                                     registry_obj.get_str_type(item[VALUE_TYPE]),
-                                    item[VALUE_DATA]))
+                                    value_data))
 
     def _generate_hku_csv_list(self, to_csv_list, csv_type, path, is_recursive=True):
         """
@@ -303,6 +356,14 @@ class _Reg(object):
         hive_list = self._get_list_from_registry_key(registry_obj.HKEY_USERS, path, is_recursive=is_recursive)
         for item in hive_list:
             if item[KEY_VALUE_STR] == "VALUE":
+
+                try:
+                    value_data = item[VALUE_DATA].decode('UTF-16')
+                    if '\x00' not in value_data:
+                        value_data = item[VALUE_DATA]
+                except:
+                    value_data = item[VALUE_DATA]
+
                 to_csv_list.append((self.computer_name,
                                     csv_type,
                                     item[VALUE_LAST_WRITE_TIME],
@@ -311,12 +372,14 @@ class _Reg(object):
                                     item[VALUE_NAME],
                                     item[KEY_VALUE_STR],
                                     registry_obj.get_str_type(item[VALUE_TYPE]),
-                                    item[VALUE_DATA]))
+                                    value_data))
 
-    def _get_list_from_users_registry_key(self, key_path, is_recursive=True):
+    def _get_list_from_users_registry_key(self, key_path, is_recursive=True, is_usrclass=False):
         """
         Extracts information from HKEY_USERS. Since logged off users hives are not mounted by Windows, it is necessary
         to open each NTUSER.DAT files, except for currently logged on users.
+        On Windows Vista and later, HKEY_USERS\ID\Software\Classes is in UsrClass.dat.
+        On Windows Vista and later, shadow copies are used in order to bypass the lock on HKCU.
         :param key_path: the registry key to list
         :param is_recursive: whether the function should also list subkeys
         :return: a list of all extracted keys/values
@@ -329,15 +392,19 @@ class _Reg(object):
                 key_data = key_user.get_sub_key_by_path(key_path)
                 if key_data:
                     construct_list_from_key(hive_list, key_data, is_recursive)
-        # same thing for logged off users (NTUSER.DAT)
-        for sid, root_key in self.user_hives:
-            key_data = root_key.get_sub_key_by_path(key_path)
+        # same thing for logged off users (NTUSER.DAT, UsrClass.dat)
+        for sid, root_key_ntuser, root_key_usrclass in self.user_hives:
+            if is_usrclass:
+                cur_root_key = root_key_usrclass
+            else:
+                cur_root_key = root_key_ntuser
+            key_data = cur_root_key.get_sub_key_by_path(key_path)
             if key_data:
                 key_data.prepend_path_with_sid(sid)
                 construct_list_from_key(hive_list, key_data, is_recursive)
         return hive_list
 
-    def _get_list_from_registry_key(self, hive, key_path, is_recursive=True):
+    def _get_list_from_registry_key(self, hive, key_path, is_recursive=True, is_usrclass=False):
         """
         Creates a list of all nodes and values from a registry key path.
         Keyword arguments:
@@ -345,7 +412,7 @@ class _Reg(object):
         key_path -- (String) the path of the key from which the list should be created
         """
         if hive == registry_obj.HKEY_USERS:
-            return self._get_list_from_users_registry_key(key_path, is_recursive)
+            return self._get_list_from_users_registry_key(key_path, is_recursive, is_usrclass)
         hive_list = []
         root_key = registry_obj.get_registry_key(hive, key_path)
         if root_key:
@@ -410,9 +477,33 @@ class _Reg(object):
                                         item[KEY_VALUE_STR],
                                         registry_obj.get_str_type(item[VALUE_TYPE]),
                                         str_value_name) + tuple(data))
-        with open(self.output_dir + "\\" + self.computer_name + "_user_assist.csv", "wb") as output:
+        with open(self.output_dir + "\\" + self.computer_name + "_user_assist" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(to_csv_list, csv_writer)
+
+    def _get_files_and_hashes(self, csv_files):
+        csv_files_transform = []
+        arch = _Archives(os.path.join(self.output_dir, self.computer_name + '_autoruns.zip'), self.logger)
+        for COMPUTER_NAME, TYPE, LAST_WRITE_TIME, HIVE, KEY_PATH, \
+                ATTR_NAME, REG_TYPE, ATTR_TYPE, ATTR_DATA in csv_files:
+            m = re.match(regex_patern_path,ATTR_DATA)
+            md5 = sha1 = sha256 = 'N\/A'
+            if m:
+                path = m.group(0).split('/')[0].strip()
+                if os.path.isfile(path):
+                    if self.vss:
+                        path = self.vss._return_root() + os.path.splitdrive(path)[1]
+                        md5, sha1, sha256 = self.vss.process_hash_value(path)
+                        arch.record(path)
+                    else:
+                        try:
+                            md5, sha1, sha256 = process_hashes(path)
+                            arch.record(path)
+                        except:
+                            pass
+            csv_files_transform.append((COMPUTER_NAME, TYPE, LAST_WRITE_TIME, HIVE, KEY_PATH, ATTR_NAME, REG_TYPE,
+                                        ATTR_TYPE, ATTR_DATA, md5, sha1, sha256))
+        return csv_files_transform
 
     def _csv_open_save_mru(self, str_opensave_mru):
         """Extracts OpenSaveMRU containing information about files selected in the Open and Save view"""
@@ -434,7 +525,7 @@ class _Reg(object):
                                         item[VALUE_NAME],
                                         item[KEY_VALUE_STR],
                                         registry_obj.get_str_type(item[VALUE_TYPE]), path))
-        with open(self.output_dir + "\\" + self.computer_name + "_opensaveMRU.csv", "wb") as output:
+        with open(self.output_dir + "\\" + self.computer_name + "_opensaveMRU" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(to_csv_list, csv_writer)
 
@@ -445,7 +536,7 @@ class _Reg(object):
         to_csv_list = [("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
                         "ATTR_TYPE", "ATTR_DATA")]
         self._generate_hklm_csv_list(to_csv_list, "registry_services", path)
-        with open(self.output_dir + "\\" + self.computer_name + "_registry_services.csv", "wb") as output:
+        with open(self.output_dir + "\\" + self.computer_name + "_registry_services" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(to_csv_list, csv_writer)
 
@@ -470,7 +561,7 @@ class _Reg(object):
                                             item[KEY_VALUE_STR],
                                             registry_obj.get_str_type(item[VALUE_TYPE]),
                                             value_decoded))
-        with open(self.output_dir + "\\" + self.computer_name + "_recent_docs.csv", "wb") as output:
+        with open(self.output_dir + "\\" + self.computer_name + "_recent_docs" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(to_csv_list, csv_writer)
 
@@ -481,7 +572,7 @@ class _Reg(object):
         to_csv_list = [("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
                         "ATTR_TYPE", "ATTR_DATA")]
         self._generate_hklm_csv_list(to_csv_list, "installer_folder", path)
-        with open(self.output_dir + "\\" + self.computer_name + "_installer_folder.csv", "wb") as output:
+        with open(self.output_dir + "\\" + self.computer_name + "_installer_folder" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(to_csv_list, csv_writer)
 
@@ -490,15 +581,16 @@ class _Reg(object):
         Extracts shellbags: size, view, icon and position of graphical windows
         In particular, executed graphical programs will leave a key here
         """
-        # TODO Check Vista and under
         self.logger.info("Extracting shell bags")
         paths = [r"Software\Microsoft\Windows\Shell\Bags",
-                 r"Software\Microsoft\Windows\Shell\BagMRU",
-                 r"Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags",
-                 r"Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\BagMRU"]
+                 r"Software\Microsoft\Windows\Shell\BagMRU"]
+        paths_usrclass = [r"Local Settings\Software\Microsoft\Windows\Shell\Bags",
+                          r"Local Settings\Software\Microsoft\Windows\Shell\BagMRU"]
         hive_list = []
         for path in paths:
             hive_list += self._get_list_from_registry_key(registry_obj.HKEY_USERS, path)
+        for path in paths_usrclass:
+            hive_list += self._get_list_from_registry_key(registry_obj.HKEY_USERS, path, is_usrclass=True)
         to_csv_list = [("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
                         "ATTR_TYPE", "ATTR_DATA")]
         for item in hive_list:
@@ -533,7 +625,7 @@ class _Reg(object):
                                             registry_obj.get_str_type(item[VALUE_TYPE]),
                                             item[VALUE_DATA]))
 
-        with open(self.output_dir + "\\" + self.computer_name + "_shellbags.csv", "wb") as output:
+        with open(self.output_dir + "\\" + self.computer_name + "_shellbags" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(to_csv_list, csv_writer)
 
@@ -551,8 +643,6 @@ class _Reg(object):
                  r"\Microsoft\Windows\CurrentVersion\RunOnceEx",
                  r"\Microsoft\Windows\CurrentVersion\RunServices",
                  r"\Microsoft\Windows\CurrentVersion\RunServicesOnce",
-                 # r"\Microsoft\Windows NT\CurrentVersion\Winlogon\\Userinit",
-                 # r"\Microsoft\Windows NT\CurrentVersion\Windows",
                  r"\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run",
                  ts_run,
                  ts_run_once]
@@ -569,7 +659,6 @@ class _Reg(object):
                  r"\Microsoft\Windows\CurrentVersion\RunOnceEx",
                  r"\Microsoft\Windows\CurrentVersion\RunServices",
                  r"\Microsoft\Windows\CurrentVersion\RunServicesOnce",
-                 r"\Microsoft\Windows NT\CurrentVersion\Windows",
                  r"\Microsoft\Windows\CurrentVersion\Policies\Explorer\Run",
                  ts_run,
                  ts_run_once]
@@ -578,7 +667,14 @@ class _Reg(object):
             self._generate_hku_csv_list(to_csv_list, "startup", full_path)
             full_path = software + wow + path
             self._generate_hku_csv_list(to_csv_list, "startup", full_path)
-        with open(self.output_dir + "\\" + self.computer_name + "_startup.csv", "wb") as output:
+        if self.get_autoruns:
+            to_csv_list = self._get_files_and_hashes(to_csv_list[1:])
+            to_csv_list.insert(0,
+                               ("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
+                                "ATTR_TYPE", "ATTR_DATA", "MD5", "SHA1", "SHA256")
+                               )
+
+        with open(self.output_dir + "\\" + self.computer_name + "_startup" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(to_csv_list, csv_writer)
 
@@ -593,7 +689,7 @@ class _Reg(object):
         to_csv_list = [("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
                         "ATTR_TYPE", "ATTR_DATA")]
         self._generate_hklm_csv_list(to_csv_list, "installed_components", path)
-        with open(self.output_dir + "\\" + self.computer_name + "_installed_components.csv", "wb") as output:
+        with open(self.output_dir + "\\" + self.computer_name + "_installed_components" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(to_csv_list, csv_writer)
 
@@ -608,7 +704,7 @@ class _Reg(object):
                         "ATTR_TYPE", "ATTR_DATA")]
         self._generate_hklm_csv_list(to_csv_list, "winlogon_values", path)
         self._generate_hku_csv_list(to_csv_list, "winlogon_values", path)
-        with open(self.output_dir + "\\" + self.computer_name + "_winlogon_values.csv", "wb") as output:
+        with open(self.output_dir + "\\" + self.computer_name + "_winlogon_values" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(to_csv_list, csv_writer)
 
@@ -618,12 +714,14 @@ class _Reg(object):
         application
         """
         self.logger.info("Extracting windows values")
-        path = r"Software\Microsoft\Windows NT\CurrentVersion\Windows"
+        paths = [r"Software\Microsoft\Windows NT\CurrentVersion\Windows",
+                 r"Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows"]
         to_csv_list = [("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
                         "ATTR_TYPE", "ATTR_DATA")]
-        self._generate_hklm_csv_list(to_csv_list, "windows_values", path)
-        self._generate_hku_csv_list(to_csv_list, "windows_values", path)
-        with open(self.output_dir + "\\" + self.computer_name + "_windows_values.csv", "wb") as output:
+        for path in paths:
+            self._generate_hklm_csv_list(to_csv_list, "windows_values", path)
+        # self._generate_hku_csv_list(to_csv_list, "windows_values", path)
+        with open(self.output_dir + "\\" + self.computer_name + "_windows_values" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(to_csv_list, csv_writer)
 
@@ -631,9 +729,9 @@ class _Reg(object):
         """Extracts information about USB devices that have been connected since the system installation"""
         self.logger.info("Extracting USB history")
         hive_list = self._get_list_from_registry_key(
-            registry_obj.HKEY_LOCAL_MACHINE,
-            r"SYSTEM\CurrentControlSet\Control\DeviceClasses\{53f56307-b6bf-11d0-94f2-00a0c91efb8b}",
-            is_recursive=False)
+                registry_obj.HKEY_LOCAL_MACHINE,
+                r"SYSTEM\CurrentControlSet\Control\DeviceClasses\{53f56307-b6bf-11d0-94f2-00a0c91efb8b}",
+                is_recursive=False)
         to_csv_list = [("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "KEY_VALUE", "USB_ID")]
         for item in hive_list:
             if item[KEY_VALUE_STR] == "KEY":
@@ -645,7 +743,7 @@ class _Reg(object):
                                     item[KEY_PATH],
                                     item[KEY_VALUE_STR],
                                     usb_decoded))
-        with open(self.output_dir + "\\" + self.computer_name + "_USBHistory.csv", "wb") as output:
+        with open(self.output_dir + "\\" + self.computer_name + "_USBHistory" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(to_csv_list, csv_writer)
 
@@ -656,6 +754,34 @@ class _Reg(object):
         to_csv_list = [("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
                         "ATTR_TYPE", "ATTR_DATA")]
         self._generate_hku_csv_list(to_csv_list, "run_MRU_start", path)
-        with open(self.output_dir + "\\" + self.computer_name + "_run_MRU_start.csv", "wb") as output:
+        with open(self.output_dir + "\\" + self.computer_name + "_run_MRU_start" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(to_csv_list, csv_writer)
+
+    def csv_custom_registry_keys(self):
+        """
+        Extracts custom registry keys, the user specifies whether it should be recursive or not.
+        The list of registry keys to extract should be comma-separated
+        """
+        if self.exec_custom_registry_keys:
+            self.logger.info("Extracting custom registry keys")
+            to_csv_list = [
+                ("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
+                 "ATTR_TYPE", "ATTR_DATA")]
+            for paths in reader([self.custom_registry_keys]):  # used as a kind of unpack
+                for path in paths:
+                    temp = path.split("\\")
+                    hive = temp[0].upper()
+                    path = "\\".join(temp[1:])
+                    if hive in ("HKLM", "HKEY_LOCAL_MACHINE"):
+                        self._generate_hklm_csv_list(to_csv_list, "custom_registry_key", path,
+                                                     is_recursive=self.registry_recursive)
+                    elif hive in ("HKU", "HKEY_USERS"):
+                        self._generate_hku_csv_list(to_csv_list, "custom_registry_key", path,
+                                                    is_recursive=self.registry_recursive)
+                    else:  # error
+                        self.logger.warn("Must specify HKLM/HKEY_LOCAL_MACHINE or HKU/HKEY_USERS as hive")
+                        return
+            with open(self.output_dir + "\\" + self.computer_name + "_custom_registry_keys" + self.rand_ext, "wb") as output:
+                csv_writer = get_csv_writer(output)
+                write_list_to_csv(to_csv_list, csv_writer)

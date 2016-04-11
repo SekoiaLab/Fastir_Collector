@@ -5,6 +5,7 @@ from registry.reg import _Reg
 class WindowsXPUserReg(_Reg):
     def __init__(self, params):
         _Reg.__init__(self, params)
+        _Reg.init_win_xp(self)
 
     def csv_open_save_mru(self):
         super(WindowsXPUserReg, self)._csv_open_save_mru(

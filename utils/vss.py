@@ -17,7 +17,7 @@ class _VSS(object):
     __instances = None
 
     @staticmethod
-    def _get_instance(params, drive="c:"):
+    def _get_instance(params, drive=os.environ['SYSTEMDRIVE']):
         if not _VSS.__instances:
             _VSS.__instances = {}
         if drive not in _VSS.__instances:
@@ -46,7 +46,8 @@ class _VSS(object):
         # print self.sh.DeviceObject
         return path_return
 
-    def create_shadow_copy(self, volume):
+    @staticmethod
+    def create_shadow_copy(volume):
         wmi_instance = win32com.client.GetObject("winmgmts:\\\\.\\root\\cimv2:Win32_ShadowCopy")
         createmethod = wmi_instance.Methods_("Create")
         createparams = createmethod.InParameters
@@ -71,18 +72,22 @@ class _VSS(object):
             if sh.ID == self.uid:
                 return sh
 
-    def list_shadow_copy(self):
+    @staticmethod
+    def list_shadow_copy():
         wmi_instance = wmi.WMI()
         list_shadowCopy = wmi_instance.Win32_ShadowCopy()
         for sh in list_shadowCopy:
             print sh
 
-    def process_hash_value(self, path):
+    @staticmethod
+    def process_hash_value(path):
         with open(path, 'rb') as f:
             try:
                 mem_map = mmap.mmap(f.fileno(), length=0, access=mmap.ACCESS_READ)
                 sha256 = hashlib.sha256(mem_map)
+                md5 = hashlib.md5(mem_map)
+                sha1 = hashlib.sha1(mem_map)
                 mem_map.close()
-                return sha256.hexdigest()
+                return md5.hexdigest(), sha1.hexdigest(), sha256.hexdigest()
             except ValueError:
                 return ""

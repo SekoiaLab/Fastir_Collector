@@ -22,6 +22,7 @@ class _Statemachine(object):
         self.output_dir = params['output_dir'] + '\\' + self.computer_name
         self.systemroot = params['system_root']
         self.logger = params['logger']
+        self.rand_ext = params['rand_ext']
 
     def _list_network_drives(self):
         for disk in self.wmi.Win32_LogicalDisk(DriveType=4):
@@ -141,7 +142,7 @@ class _Statemachine(object):
 
     def _csv_list_running_process(self, list_running):
         self.logger.info("Health : Listing running processes")
-        with open(self.output_dir + '_processes.csv', 'ab') as fw:
+        with open(self.output_dir + '_processes' + self.rand_ext, 'ab') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "COMMAND", "EXEC_PATH"], csv_writer)
             for p in list_running:
@@ -152,11 +153,11 @@ class _Statemachine(object):
                 write_to_csv(
                     [self.computer_name, 'processes', unicode(pid), name, unicode(cmd), unicode(exe_path)],
                     csv_writer)
-        record_sha256_logs(self.output_dir + '_processes.csv', self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + '_processes' + self.rand_ext, self.output_dir + '_sha256.log')
 
     def _csv_hash_running_process(self, list_running):
         self.logger.info("Health : Hashing running processes")
-        with open(self.output_dir + '_hash_processes.csv', 'ab') as fw:
+        with open(self.output_dir + '_hash_processes' + self.rand_ext, 'ab') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "EXEC_PATH", "MD5", "SHA1", "CTIME", "MTIME", "ATIME"], csv_writer)
             for p in list_running:
@@ -164,7 +165,7 @@ class _Statemachine(object):
                 name = p[1]
                 cmd = p[2]
                 exe_path = p[3]
-                if exe_path <> None:
+                if exe_path:
                     ctime = datetime.datetime.fromtimestamp(os.path.getctime(exe_path))
                     mtime = datetime.datetime.fromtimestamp(os.path.getmtime(exe_path))
                     atime = datetime.datetime.fromtimestamp(os.path.getatime(exe_path))
@@ -173,48 +174,48 @@ class _Statemachine(object):
                     write_to_csv(
                         [self.computer_name, 'processes', unicode(pid), name, unicode(exe_path), md5, sha1, ctime, mtime, atime],
                         csv_writer)
-        record_sha256_logs(self.output_dir + '_hash_processes.csv', self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + '_hash_processes' + self.rand_ext, self.output_dir + '_sha256.log')
 
     def _csv_list_share(self, share):
         self.logger.info("Health : Listing shares")
-        with open(self.output_dir + '_shares.csv', 'wb') as fw:
+        with open(self.output_dir + '_shares' + self.rand_ext, 'wb') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "SHARE_NAME", "SHARE_PATH"], csv_writer)
             for name, path in share:
                 write_to_csv([self.computer_name, 'shares', name, path], csv_writer)
-        record_sha256_logs(self.output_dir + '_shares.csv', self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + '_shares' + self.rand_ext, self.output_dir + '_sha256.log')
 
     def _csv_list_drives(self, drives):
         self.logger.info("Health : Listing drives")
-        with open(self.output_dir + '_list_drives.csv', 'wb') as fw:
+        with open(self.output_dir + '_list_drives' + self.rand_ext, 'wb') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "FAB", "PARTITIONS", "DISK", "FILESYSTEM"], csv_writer)
             for phCapt, partCapt, logicalCapt, fs in drives:
                 write_to_csv([self.computer_name, 'list_drives', phCapt, partCapt, logicalCapt, fs], csv_writer)
-        record_sha256_logs(self.output_dir + '_list_drives.csv', self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + '_list_drives' + self.rand_ext, self.output_dir + '_sha256.log')
 
     def _csv_list_network_drives(self, drives):
         self.logger.info("Health : Listing network drives")
-        with open(self.output_dir + '_list_networks_drives.csv', 'wb') as fw:
+        with open(self.output_dir + '_list_networks_drives' + self.rand_ext, 'wb') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "DISK", "FILESYSTEM", "PARTITION_NAME"], csv_writer)
             for diskCapt, diskFs, diskPName in drives:
                 write_to_csv([self.computer_name, 'list_networks_drives', diskCapt, diskFs, diskPName], csv_writer)
-        record_sha256_logs(self.output_dir + '_list_networks_drives.csv', self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + '_list_networks_drives' + self.rand_ext, self.output_dir + '_sha256.log')
 
     def _csv_list_sessions(self, sessions):
         self.logger.info('Health : Listing sessions')
-        with open(self.output_dir + '_sessions.csv', 'ab') as fw:
+        with open(self.output_dir + '_sessions' + self.rand_ext, 'ab') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "LOGON_ID", "AUTH_PACKAGE", "START_TIME", "LOGON_TYPE"], csv_writer)
             for logonID, authenticationPackage, startime, logontype in sessions:
                 write_to_csv([self.computer_name, 'sessions', unicode(logonID),
                               authenticationPackage, unicode(startime.split('.')[0]), unicode(logontype)], csv_writer)
-        record_sha256_logs(self.output_dir + '_sessions.csv', self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + '_sessions' + self.rand_ext, self.output_dir + '_sha256.log')
 
     def _csv_list_scheduled_jobs(self):
         self.logger.info('Health : Listing scheduled jobs')
-        file_tasks = self.output_dir + '_tasks.csv'
+        file_tasks = self.output_dir + '_tasks' + self.rand_ext
         with open(file_tasks, 'wb') as tasks_logs:
             proc = subprocess.Popen(["schtasks.exe", '/query', '/fo', 'CSV'], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             res = proc.communicate()
@@ -235,7 +236,7 @@ class _Statemachine(object):
                 write_to_output(line+"\r\n", tasks_logs, self.logger)
 
         self.logger.info('Health : Listing scheduled jobs')
-        with open(file_tasks, "r") as fr, open(self.output_dir + "_scheduled_jobs.csv", 'wb') as fw:
+        with open(file_tasks, "r") as fr, open(self.output_dir + '_scheduled_jobs' + self.rand_ext, 'wb') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "JOB_NAME", "TIME", "STATE"], csv_writer)
             for l in fr.readlines():
@@ -245,11 +246,11 @@ class _Statemachine(object):
                     arr_write = [self.computer_name, 'scheduled_jobs'] + l.split(',')
                     write_to_csv(arr_write, csv_writer)
         self.logger.info('Health : Listing scheduled jobs')
-        record_sha256_logs(self.output_dir + '_scheduled_jobs.csv', self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + '_scheduled_jobs' + self.rand_ext, self.output_dir + '_sha256.log')
 
     def _csv_list_network_adapters(self, ncs):
         self.logger.info('Health : Listing network adapters')
-        with open(self.output_dir + "_networks_cards.csv", 'wb') as fw:
+        with open(self.output_dir + '_networks_cards' + self.rand_ext, 'wb') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "NETWORK_CARD", "ADAPTER_TYPE", "DESCRIPTION", "MAC_ADDR",
                           "PRODUCT_NAME", "PHYSICAL_ADAPTER", "SPEED", "IPv4", "IPv6", "DHCP_SERVER", "DNS_SERVER",
@@ -291,11 +292,11 @@ class _Statemachine(object):
                                   database_path, nbtstat_value], csv_writer)
                 except IOError:
                     self.logger.error(traceback.format_exc())
-        record_sha256_logs(self.output_dir + '_networks_cards.csv', self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + '_networks_cards' + self.rand_ext, self.output_dir + '_sha256.log')
 
     def _csv_list_arp_table(self, arp):
         self.logger.info('Health : Listing ARP tables')
-        with open(self.output_dir + "_arp_table.csv", 'wb') as fw:
+        with open(self.output_dir + '_arp_table' + self.rand_ext, 'wb') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "IP", "MAC_ADDR", "STATUS"], csv_writer)
             for entry in arp:
@@ -307,20 +308,20 @@ class _Statemachine(object):
                 if entry_to_write.find('\.') != 1 and len(entry_to_write) > 0:
                     arr_to_write = [self.computer_name, 'arp_table'] + tokens
                     write_to_csv(arr_to_write, csv_writer)
-        record_sha256_logs(self.output_dir + '_arp_table.csv', self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + '_arp_table' + self.rand_ext, self.output_dir + '_sha256.log')
 
     def _csv_list_route_table(self, routes):
         self.logger.info('Health : Listing routes tables')
-        with open(self.output_dir + "_routes_tables.csv", 'ab') as fw:
+        with open(self.output_dir + '_routes_tables' + self.rand_ext, 'ab') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "NAME", "MASK"], csv_writer)
             for ip, mask in routes:
                 write_to_csv([self.computer_name, 'routes_tables', unicode(ip), unicode(mask)], csv_writer)
-        record_sha256_logs(self.output_dir + '_routes_tables.csv', self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + '_routes_tables' + self.rand_ext, self.output_dir + '_sha256.log')
 
     def _csv_list_sockets_network(self, connections):
         self.logger.info('Health : Listing sockets networks')
-        with open(self.output_dir + '_sockets.csv', 'ab') as fw:
+        with open(self.output_dir + '_sockets' + self.rand_ext, 'ab') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "LOCAL_ADDR", "SOURCE_PORT", "REMOTE_ADDR",
                           "REMOTE_PORT", "STATUS"], csv_writer)
@@ -328,11 +329,11 @@ class _Statemachine(object):
                 write_to_csv([self.computer_name, 'sockets', unicode(pid),
                               unicode(name), unicode(local_address), unicode(source_port),
                               unicode(remote_addr), unicode(remote_port), unicode(status)], csv_writer)
-        record_sha256_logs(self.output_dir + '_sockets.csv', self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + '_sockets' + self.rand_ext, self.output_dir + '_sha256.log')
 
     def _csv_list_services(self, services):
         self.logger.info('Health : Listing services')
-        with open(self.output_dir + '_services.csv', 'ab') as fw:
+        with open(self.output_dir + '_services' + self.rand_ext, 'ab') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "CAPTION", "PID", "SERVICE_TYPE", "PATH_NAME", "STATUS", "STATE",
                           "START_MODE"], csv_writer)
@@ -340,11 +341,11 @@ class _Statemachine(object):
                 write_to_csv([self.computer_name, 'services', caption,
                               unicode(processId), serviceType, pathName,
                               unicode(status), state, startMode], csv_writer)
-        record_sha256_logs(self.output_dir + '_services.csv', self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + '_services' + self.rand_ext, self.output_dir + '_sha256.log')
 
     def _csv_list_kb(self, kbs):
         self.logger.info('Health : Listing KB installed on computer')
-        with open(self.output_dir + '_kb.csv', 'ab') as fw:
+        with open(self.output_dir + '_kb' + self.rand_ext, 'ab') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "CAPTION", "CS_NAME", "FIX_COMMENTS", "HOTFIX_ID", "INSTALL_DATE",
                           "INSTALLED_ON", "NAME", "SERVICE_PACK", "STATUS"], csv_writer)

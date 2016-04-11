@@ -14,12 +14,15 @@ import re
 import sys
 import traceback
 import yaml
-from utils.utils import mount_share, unmount_share,get_os_version,change_char_set_os_environ
+from utils.utils import mount_share, unmount_share, get_os_version, change_char_set_os_environ
 from utils.vss import _VSS
 import wmi
 import factory.factory as factory
 from settings import USERS_FOLDER, EXTRACT_DUMP
+import ctypes
 import settings
+import random
+import string
 
 
 def set_logger(param_options):
@@ -60,9 +63,8 @@ def detect_os():
     name_version = version[0]
 
 
-
 def set_environment_options(param_options):
-    os.environ=change_char_set_os_environ(os.environ)
+    os.environ = change_char_set_os_environ(os.environ)
     operating_sys = platform.system()
 
     if operating_sys == settings.OS:
@@ -99,15 +101,15 @@ def set_environment_options(param_options):
                         path = path.replace(username, "*")
 
                         for p in glob.glob(path):
-                            fs.append(p + '|'+depth)
+                            fs.append(p + '|' + depth)
                     else:
                         try:
-                            fs.append(d.replace("%" + d[1:len(d) - 1] + "%", os.environ[d[1:len(d) - 1]])+'|'+depth)
+                            fs.append(d.replace("%" + d[1:len(d) - 1] + "%", os.environ[d[1:len(d) - 1]]) + '|' + depth)
                         except KeyError:
                             sys.stderr.write("Environment variable '%s' doesn't exist\n" % d)
                 else:
                     try:
-                        fs.append(d.replace("%" + env_var + "%", os.environ[env_var]) + '|'+depth)
+                        fs.append(d.replace("%" + env_var + "%", os.environ[env_var]) + '|' + depth)
                     except KeyError:
                         sys.stderr.write("Environment variable '%s' doesn't exist\n" % d)
             elif os.path.isdir(d):
@@ -155,17 +157,31 @@ def profile_used(path, param_options):
         param_options["ext_file"] = config.get("filecatcher", "ext_file")
         param_options["zip_ext_file"] = config.get("filecatcher", "zip_ext_file")
         param_options["all_users"] = yaml.load(config.get("filecatcher", "all_users"))
-        param_options['compare'] = config.get('filecatcher','compare')
-
+        param_options['compare'] = config.get('filecatcher', 'compare')
+        param_options['limit_days'] = config.get('filecatcher', 'limit_days')
     if config.has_section("dump"):
         param_options["dump"] = config.get("dump", "dump")
         param_options["mft_export"] = config.get("dump", "mft_export")
 
+    if config.has_section("registry"):
+        param_options["custom_registry_keys"] = config.get("registry", "custom_registry_keys")
+        param_options["registry_recursive"] = yaml.load(config.get("registry", "registry_recursive"))
+        param_options["get_autoruns"] = yaml.load(config.get('registry', "get_autoruns"))
     if config.has_section('modules'):
         for module in config.options('modules'):
             for module_option in config.options(module):
                 param_options[module_option] = config.get(module, module_option)
-
+    if config.has_section('extension'):
+        if config.has_option('extension', 'random'):
+            if yaml.load(config.get("extension","random")):
+                param_options["rand_ext"] = "." + "".join(
+                    [random.SystemRandom().choice(string.ascii_lowercase) for _ in xrange(5)])
+            else:
+                param_options["rand_ext"] = '.csv'
+        else:
+            param_options["rand_ext"] = '.csv'
+    else:
+        param_options["rand_ext"] = '.csv'
     return param_options
 
 
@@ -193,7 +209,7 @@ def create_output_dir(output_dir, letter=None):
 
     if letter:
         output_dir = letter + os.path.sep + output_dir + os.path.sep + datetime.now().strftime(
-            "%Y-%m-%d_%H%M%S") + os.path.sep
+                "%Y-%m-%d_%H%M%S") + os.path.sep
     else:
         output_dir = output_dir + os.path.sep + datetime.now().strftime("%Y-%m-%d_%H%M%S") + os.path.sep
     create_dir(output_dir)
@@ -321,6 +337,13 @@ def main(param_options):
     """
     import time
     time.sleep(2)
+
+    # check administrative rights
+    if ctypes.windll.shell32.IsUserAnAdmin() == 0:
+        print "ERROR: FastIR Collector must run with administrative privileges\nPress ENTER to finish..."
+        sys.stdin.readline()
+        return 0
+
     set_logger(param_options)
 
     modules = factory.load_modules(param_options["packages"], param_options["output_dir"])

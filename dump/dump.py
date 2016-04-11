@@ -7,7 +7,7 @@ import struct
 import time
 import win32file
 import yaml
-
+import glob
 from _analyzemft.mftsession import _MftSession
 from disk_analysis import DiskAnalysis
 from environment_settings import Partitions, Disks, OperatingSystem, \
@@ -18,7 +18,8 @@ from settings import LONGLONGSIZE, BYTESIZE, WORDSIZE
 from utils.utils import get_local_drives, create_driver_service, start_service, stop_and_delete_driver_service
 from utils.utils_rawstring import decodeATRHeader, decode_data_runs, get_physical_drives
 from winpmem import _Image
-
+from filecatcher.archives import _Archives
+from utils.vss import _VSS
 
 class _Dump(object):
     def __init__(self, params):
@@ -26,8 +27,11 @@ class _Dump(object):
         self.output_dir = params['output_dir']
         self.logger = params['logger']
         self.mft_export = yaml.load(params['mft_export'])
+        self.rand_ext = params['rand_ext']
+        self.userprofile = params['USERPROFILE']
         if 'rekall' in params:
             self.plugins = params['rekall']
+        self.params = params
 
     def csv_mft(self):
         """Exports the MFT from each local drives and creates a csv from it."""
@@ -100,7 +104,8 @@ class _Dump(object):
             if self.mft_export:
                 session = _MftSession(self.logger,
                                       self.output_dir + '\\' + self.computer_name + '_mft_' + local_drive[0] + '.mft',
-                                      self.output_dir + '\\' + self.computer_name + '_mft_' + local_drive[0] + '.csv')
+                                      self.output_dir + '\\' + self.computer_name + '_mft_' + local_drive[0] +
+                                      self.rand_ext)
                 session.open_files()
                 session.process_mft_file()
 
@@ -164,3 +169,12 @@ class _Dump(object):
         informations.envVarList = os.environ
         informations.listPartitions = partition.partition_information(informations.currentMachine)
         informations.save_informations()
+
+    def csv_registry(self):
+        arch = _Archives(os.path.join(self.output_dir,'dump_registry.zip'), self.logger)
+        if hasattr(self, 'root_reg'):
+            files_to_zip = [os.path.join(self.root_reg, f) for f in os.listdir(self.root_reg) if os.path.isfile(os.path.join(self.root_reg, f))]
+            path_ntuserdat = os.path.join(self.userprofile, '*', 'NTUSER.DAT')
+            files_to_zip.extend([ os.path.join(_VSS._get_instance(self.params,os.path.splitdrive(f)[0])._return_root(),os.path.splitdrive(f)[1]) for f in glob.glob(path_ntuserdat) if os.path.isfile(f)])
+            for f in files_to_zip:
+                arch.record(f)

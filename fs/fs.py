@@ -3,7 +3,6 @@ from __future__ import unicode_literals
 
 import datetime
 import glob
-import logging
 import os
 import sqlite3
 import traceback
@@ -25,6 +24,7 @@ class _FS(object):
         self.computer_name = params['computer_name']
         self.output_dir = params['output_dir']
         self.logger = params['logger']
+        self.rand_ext = params['rand_ext']
 
     def _list_named_pipes(self):
         for p in look_for_files('\\\\.\\pipe\\*'):
@@ -32,27 +32,36 @@ class _FS(object):
 
     def __decode_section_a(self, format_version, content, section_a):
         hash_table = dict()
-        if format_version == 17:
-            hash_table['start_time'] = struct.unpack("<I", content[section_a:section_a + 4])[0]
-            hash_table['duration'] = struct.unpack("<I", content[section_a + 4:section_a + 4 + 4])[0]
-            hash_table['average_duration'] = ''
-            hash_table['filename_offset'] = struct.unpack("<I", content[section_a + 8:section_a + 8 + 4])[0]
-            hash_table['filename_nb_char'] = struct.unpack("<I", content[section_a + 12:section_a + 12 + 4])[0]
-        else:
-            hash_table['start_time'] = struct.unpack("<I", content[section_a:section_a + 4])[0]
-            hash_table['duration'] = struct.unpack("<I", content[section_a + 4:section_a + 4 + 4])[0]
-            hash_table['average_duration'] = struct.unpack("<I", content[section_a + 8:section_a + 8 + 4])[0]
-            hash_table['filename_offset'] = struct.unpack("<I", content[section_a + 12:section_a + 12 + 4])[0]
-            hash_table['filename_nb_char'] = struct.unpack("<I", content[section_a + 16:section_a + 16 + 4])[0]
+        try:
+            if format_version == 17:
+                hash_table['start_time'] = struct.unpack("<I", content[section_a:section_a + 4])[0]
+                hash_table['duration'] = struct.unpack("<I", content[section_a + 4:section_a + 4 + 4])[0]
+                hash_table['average_duration'] = ''
+                hash_table['filename_offset'] = struct.unpack("<I", content[section_a + 8:section_a + 8 + 4])[0]
+                hash_table['filename_nb_char'] = struct.unpack("<I", content[section_a + 12:section_a + 12 + 4])[0]
+            else:
+                hash_table['start_time'] = struct.unpack("<I", content[section_a:section_a + 4])[0]
+                hash_table['duration'] = struct.unpack("<I", content[section_a + 4:section_a + 4 + 4])[0]
+                hash_table['average_duration'] = struct.unpack("<I", content[section_a + 8:section_a + 8 + 4])[0]
+                hash_table['filename_offset'] = struct.unpack("<I", content[section_a + 12:section_a + 12 + 4])[0]
+                hash_table['filename_nb_char'] = struct.unpack("<I", content[section_a + 16:section_a + 16 + 4])[0]
+        except:
+            pass
         return hash_table
 
     def __decode_section_c(self, content, section_c, length_c):
+        list_str = 'N/A'
         try:
             list_str = content[section_c:section_c + length_c].decode('utf-16-le').split("\x00")
-        except UnicodeDecodeError as e:
-            list_str = content[section_c:section_c + e.start].decode('utf-16-le').split("\x00")
 
-        if len(list_str[-1]) == 0:  # remove trailing string
+
+        except UnicodeDecodeError as e:
+            try:
+                list_str = content[section_c:section_c + e.start].decode('utf-16-le').split("\x00")
+            except UnicodeDecodeError as e:
+                self.logger.error(e)
+
+        if list_str != 'N/A' and len(list_str[-1]) == 0:  # remove trailing string
             list_str = list_str[:-1]
         return list_str
 
@@ -100,8 +109,11 @@ class _FS(object):
                 file_size = content[0x000c:0x000c + 4]
                 file_size = struct.unpack("<I", file_size)
                 exec_name = content[0x0010:0x0010 + 60]
-                exec_name = exec_name.decode('utf-16-le').replace("\x00", "")
-                exec_name= exec_name.split('.EXE')[0] + '.EXE'
+                try:
+                    exec_name = exec_name.decode('utf-16-le').replace("\x00", "")
+                    exec_name = exec_name.split('.EXE')[0] + '.EXE'
+                except:
+                    exec_name = 'N\A'
                 prefetch_hash = content[0x004c:0x004c + 4]
                 tc = os.path.getctime(prefetch_file)
                 tm = os.path.getmtime(prefetch_file)
@@ -167,7 +179,7 @@ class _FS(object):
                 usrp_tokens = userprofile.split('\\')
                 prefix = usrp_tokens[0]
                 env = prefix.replace('%', '')
-                userprofile = userprofile.replace(prefix, os.environ[env])
+                userprofile = userprofile.replace(prefix, os.environ[env.upper()])
             for directory_to_search in directories_to_search:
                 full_path = userprofile + '\\' + directory_to_search
                 # construct the list of windows in the directory_to_search for the zip function
@@ -213,16 +225,16 @@ class _FS(object):
                 yield time, url, title, user, profile
 
     def _csv_list_named_pipes(self, pipes):
-        with open(self.output_dir + '\\' + self.computer_name + '_named_pipes.csv', 'wb') as output:
+        with open(self.output_dir + '\\' + self.computer_name + '_named_pipes' + self.rand_ext, 'wb') as output:
             csv_writer = get_csv_writer(output)
             write_to_csv(("COMPUTER_NAME", "TYPE", "NAME"), csv_writer)
             for pipe in pipes:
                 write_to_csv([self.computer_name, 'named_pipes', pipe], csv_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_named_pipes.csv',
+        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_named_pipes' + self.rand_ext,
                            self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
     def _csv_windows_prefetch(self, wpref):
-        with open(self.output_dir + '\\' + self.computer_name + '_prefetch.csv', 'wb') as output:
+        with open(self.output_dir + '\\' + self.computer_name + '_prefetch' + self.rand_ext, 'wb') as output:
             csv_writer = get_csv_writer(output)
             write_to_csv(("COMPUTER_NAME", "TYPE", "FILE", "VERSION", "SIZE", "EXEC_NAME", "CREATE_TIME",
                           "MODIFICATION_TIME", "RUN_COUNT", "START_TIME", "DURATION", "AVERAGE_DURATION",
@@ -237,29 +249,29 @@ class _FS(object):
                               unicode(tc), unicode(tm), unicode(run_count), unicode(hash_table_a['start_time']),
                               unicode(hash_table_a['duration']), unicode(hash_table_a['average_duration']), str_c],
                              csv_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_prefetch.csv',
+        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_prefetch' + self.rand_ext,
                            self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
     def _csv_firefox_history(self, fhistory):
-        with open(self.output_dir + '\\' + self.computer_name + '_firefox_history.csv', 'wb') as output:
+        with open(self.output_dir + '\\' + self.computer_name + '_firefox_history' + self.rand_ext, 'wb') as output:
             csv_writer = get_csv_writer(output)
             for time, url, user, profile in fhistory:
                 write_to_csv([self.computer_name, 'firefox_history', time, url, user, profile], csv_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_firefox_history.csv',
+        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_firefox_history' + self.rand_ext,
                            self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
     def _csv_chrome_history(self, chistory):
-        with open(self.output_dir + '\\' + self.computer_name + '_chrome_history.csv', 'wb') as output:
+        with open(self.output_dir + '\\' + self.computer_name + '_chrome_history' + self.rand_ext, 'wb') as output:
             csv_writer = get_csv_writer(output)
             write_to_csv(("COMPUTER_NAME", "TYPE", "TIME", "URL", "TITLE", "USER", "PROFILE"), csv_writer)
             for time, url, title, user, profile in chistory:
                 write_to_csv([self.computer_name, 'chrome_history', time, url, title, user, profile], csv_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_chrome_history.csv',
+        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_chrome_history' + self.rand_ext,
                            self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
     def csv_recycle_bin(self):
         """Exports the filenames contained in the recycle bin"""
-        with open(self.output_dir + '\\' + self.computer_name + '_recycle_bin.csv', 'wb') as output:
+        with open(self.output_dir + '\\' + self.computer_name + '_recycle_bin' + self.rand_ext, 'wb') as output:
             csv_writer = get_csv_writer(output)
             write_to_csv(("COMPUTER_NAME", "TYPE", "NAME_1", "NAME_2"), csv_writer)
             idl = shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_BITBUCKET)
@@ -270,7 +282,7 @@ class _FS(object):
                 write_to_csv(
                         [self.computer_name, 'recycle_bin', files.GetDisplayNameOf(bin_file, shellcon.SHGDN_NORMAL),
                          files.GetDisplayNameOf(bin_file, shellcon.SHGDN_FORPARSING)], csv_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_recycle_bin.csv',
+        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_recycle_bin' + self.rand_ext,
                            self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
     def get_e_mail_attachments(self):

@@ -23,6 +23,7 @@ import codecs
 import locale
 import ctypes
 
+regex_patern_path = '^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))'
 
 class UnicodeWriter:
     """
@@ -430,6 +431,10 @@ def record_sha256_logs(fr, fw):
         hash_file.write(fr + "," + m + "\n")
         hash_file.close()
 
+
+def process_hashes(path):
+    content = open(path, "rb").read()
+    return hashlib.md5(content).hexdigest(), hashlib.sha1(content).hexdigest(), hashlib.sha256(content).hexdigest()
 
 def process_md5(path):
     with open(path, "rb") as f:

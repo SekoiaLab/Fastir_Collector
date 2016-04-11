@@ -14,7 +14,6 @@ from utils.utils import get_csv_writer, write_to_csv, record_sha256_logs
 import win32clipboard
 import win32api
 
-
 # if get_architecture()=='86':
 # print 'toto'
 # import dnscache_ext
@@ -54,6 +53,7 @@ class PROCESSENTRY32(Structure):
                 ('szExeFile', c_char * 260),
                 ('th32MemoryBase', c_long),
                 ('th32AccessKey', c_long)]
+
 
 # CreateToolhelp32Snapshot
 CreateToolhelp32Snapshot = windll.kernel32.CreateToolhelp32Snapshot
@@ -130,6 +130,7 @@ class _Memory(object):
         self.output_dir = params['output_dir']
         self.computer_name = params['computer_name']
         self.logger = params['logger']
+        self.rand_ext = params['rand_ext']
 
     def _GetProcessModules(self, ProcessID, isPrint):
         me32 = MODULEENTRY32()
@@ -162,7 +163,7 @@ class _Memory(object):
         pe32.dwSize = sizeof(PROCESSENTRY32)
         ret = Process32First(hProcessSnap, pointer(pe32))
 
-        with open(self.output_dir + '\\' + self.computer_name + '_processes_dll.csv', 'wb') as output:
+        with open(self.output_dir + '\\' + self.computer_name + '_processes_dll' + self.rand_ext, 'wb') as output:
             csv_writer = get_csv_writer(output)
             write_to_csv(["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "MODULE"], csv_writer)
             while ret:
@@ -170,11 +171,12 @@ class _Memory(object):
                 if len(modules) > 0:
                     process_name = modules.pop(0)  # first element is the name of the process
                     for module in modules:
-                        write_to_csv([self.computer_name, 'processes_dll', unicode(pe32.th32ProcessID), process_name, module],
+                        write_to_csv([self.computer_name, 'processes_dll', unicode(pe32.th32ProcessID), process_name,
+                                      module],
                                      csv_writer)
 
                 ret = Process32Next(hProcessSnap, pointer(pe32))
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_processes_dll.csv',
+        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_processes_dll' + self.rand_ext,
                            self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
     def _csv_all_modules_opened_files(self):
@@ -185,7 +187,8 @@ class _Memory(object):
         pe32.dwSize = sizeof(PROCESSENTRY32)
         ret = Process32First(hProcessSnap, pointer(pe32))
 
-        with open(self.output_dir + '\\' + self.computer_name + '_processes_opened_files.csv', 'wb') as output:
+        with open(self.output_dir + '\\' + self.computer_name + '_processes_opened_files' + self.rand_ext,
+                  'wb') as output:
             csv_writer = get_csv_writer(output)
             write_to_csv(["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "FILENAME"], csv_writer)
             while ret:
@@ -193,7 +196,7 @@ class _Memory(object):
                     p = psutil.Process(pe32.th32ProcessID)
                     process_name = p.name()
                     self.logger.info(
-                        'Getting opened files for : ' + process_name + '(' + unicode(pe32.th32ProcessID) + ')')
+                            'Getting opened files for : ' + process_name + '(' + unicode(pe32.th32ProcessID) + ')')
                     # We need open a subprocess because get_open_files may hang forever
                     q = Queue()
                     process = Process(target=timer_open_files, args=(p, q,))
@@ -210,31 +213,32 @@ class _Memory(object):
                         if isinstance(opened_files, list):
                             for opened_file in opened_files:
                                 write_to_csv(
-                                    [self.computer_name, 'processes_opened_files', unicode(pe32.th32ProcessID), process_name,
-                                     opened_file[0]], csv_writer)
+                                        [self.computer_name, 'processes_opened_files', unicode(pe32.th32ProcessID),
+                                         process_name,
+                                         opened_file[0]], csv_writer)
                 except psutil.AccessDenied:
                     self.logger.warn('Could not open handle for PID : ' + unicode(pe32.th32ProcessID))
 
                 ret = Process32Next(hProcessSnap, pointer(pe32))
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_processes_opened_files.csv',
+        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_processes_opened_files' + self.rand_ext,
                            self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
     def csv_clipboard(self):
         """Exports the clipboard contents"""
         # TODO : what happens if clipboard contents is a CSV string ?
         self.logger.info('Getting clipboard contents')
-        with open(self.output_dir + '\\' + self.computer_name + '_clipboard.csv', 'wb') as output:
+        with open(self.output_dir + '\\' + self.computer_name + '_clipboard' + self.rand_ext, 'wb') as output:
             csv_writer = get_csv_writer(output)
             write_to_csv(["COMPUTER_NAME", "TYPE", "DATA"], csv_writer)
 
-            r = None    #initialize the local variable r
+            r = None
             try:
                 r = Tk()  # Using Tk instead because it supports exotic characters
                 data = r.selection_get(selection='CLIPBOARD')
                 r.destroy()
                 write_to_csv([self.computer_name, 'clipboard', unicode(data)], csv_writer)
             except:
-                if r != None:   # Verify that r exist before calling destroy
+                if r:  # Verify that r exists before calling destroy
                     r.destroy()
                 win32clipboard.OpenClipboard()
                 clip = win32clipboard.EnumClipboardFormats(0)
@@ -250,12 +254,12 @@ class _Memory(object):
                             write_to_csv([self.computer_name, 'clipboard', filename], csv_writer)
                     clip = win32clipboard.EnumClipboardFormats(clip)
                 win32clipboard.CloseClipboard()
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_clipboard.csv',
+        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_clipboard' + self.rand_ext,
                            self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
         # 	def csv_dns_cache(self):
         # 		if get_architecture()=='86':
-        # 			with open(self.output_dir + '\\' + self.computer_name + '_dnscache.csv','wb') as output:
+        # 			with open(self.output_dir + '\\' + self.computer_name + '_dnscache' + self.rand_ext,'wb') as output:
         # 				csv_writer=get_csv_writer(output)
         # 				for entry in dnscache_ext.dnscache().split('\r\n'):
         # 					if ':' in entry:
@@ -264,4 +268,4 @@ class _Memory(object):
         # 						ip_addr=token[1]
         # 						write_to_csv([fqdn,ip_addr], csv_writer)
         #
-        # 			record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_dnscache.csv',self.output_dir+'\\' + self.computer_name+'_sha256.log')
+        # 			record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_dnscache' + self.rand_ext,self.output_dir+'\\' + self.computer_name+'_sha256.log')

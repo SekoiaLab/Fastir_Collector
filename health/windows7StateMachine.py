@@ -56,7 +56,7 @@ class Windows7StateMachine(_Statemachine):
         super(Windows7StateMachine, self)._csv_list_running_process(self._list_running())
 
     def csv_hash_running_proccess(self):
-        super(Windows10StateMachine, self)._csv_hash_running_process(self._list_running())
+        super(Windows7StateMachine, self)._csv_hash_running_process(self._list_running())
 
     def csv_list_sessions(self):
         super(Windows7StateMachine, self)._csv_list_sessions(self._list_sessions())

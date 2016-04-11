@@ -15,6 +15,7 @@ class _EventLogs(object):
         self.output_dir = params['output_dir']
         self.computer_name = params['computer_name']
         self.logger = params['logger']
+        self.rand_ext = params['rand_ext']
 
     def _list_evt_vista(self, _, logtype):
         """Retrieves the contents of the event log for Windows Vista and later"""
@@ -58,7 +59,7 @@ class _EventLogs(object):
     def _csv_event_logs(self, is_win_xp):
         """Prints the event logs in a csv, the called method is different for WinXP and lower"""
         server = None  # name of the target computer to get event logs, None to get logs from current computer
-        with open(self.output_dir + '\\' + self.computer_name + '_evts.csv', 'wb') as fw:
+        with open(self.output_dir + '\\' + self.computer_name + '_evts' + self.rand_ext, 'wb') as fw:
             csv_writer = get_csv_writer(fw)
             if is_win_xp:
                 for eventCategory, sourceName, eventID, eventType, date, log in self._list_evt_xp(server, 'Security'):

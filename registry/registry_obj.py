@@ -51,7 +51,7 @@ def get_registry_key(hive, path=""):
         return None
 
 
-class RegistryKey():
+class RegistryKey(object):
     def __init__(self, hive, path=""):
         self.path = path
         self.hive = hive
@@ -123,7 +123,7 @@ class RegistryKey():
         return self.path
 
 
-class RegValue():
+class RegValue(object):
     def __init__(self, value, path):
         self.value = value
         self.path = path
@@ -144,7 +144,7 @@ class RegValue():
         return self.path + "\\" + self.get_name()
 
 
-class RegfFile():
+class RegfFile(object):
     def __init__(self):
         self.file = pyregf.file()
 
@@ -158,7 +158,7 @@ class RegfFile():
         return getattr(self.file, function)
 
 
-class RegfKey():
+class RegfKey(object):
     def __init__(self, key, path):
         self.key = key
         self.path = path
@@ -211,7 +211,7 @@ class RegfKey():
         return getattr(self.key, function)
 
 
-class RegfValue():
+class RegfValue(object):
     def __init__(self, value, path):
         self.value = value
         self.path = path

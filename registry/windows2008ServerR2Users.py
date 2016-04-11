@@ -5,6 +5,7 @@ from registry.reg import _Reg
 class Windows2008ServerR2UserReg(_Reg):
     def __init__(self, params):
         _Reg.__init__(self, params)
+        _Reg.init_win_vista_and_above(self)
 
     def csv_open_save_mru(self):
         super(Windows2008ServerR2UserReg, self)._csv_open_save_mru(

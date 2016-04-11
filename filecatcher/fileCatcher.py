@@ -4,7 +4,7 @@ import os
 from filecatcher.listfiles import _ListFiles
 from settings import VIRUS_TOTAL
 from utils.utils import get_csv_writer, write_to_csv, process_size, record_sha256_logs, \
-    process_sha256
+    process_hashes
 from utils.utils_rawstring import sekoiamagic
 import yaml
 from filecatcher.modules.PE import _PE
@@ -30,9 +30,11 @@ class _FileCatcher(object):
         self.compare = params['compare']
         self.filtered_certificates = yaml.load(params['filtered_certificates'])
         self.filtered_yara = yaml.load(params['filtered_yara'])
-        self.zip_file=None
+        self.limit_days = params['limit_days']
+        self.rand_ext = params['rand_ext']
+        self.zip_file = None
         if self.zip:
-            self.zip_file = _Archives(self.output_dir + '\\' + self.computer_name + '_files_.zip',self.logger)
+            self.zip_file = _Archives(self.output_dir + '\\' + self.computer_name + '_files_.zip', self.logger)
 
     def _list_files(self):
         pe = None
@@ -43,53 +45,70 @@ class _FileCatcher(object):
             lst = _ListFiles(directory, self.logger)
 
             for f in lst.list_files(directory):
-                if self.filtered_yara:
-                    if not yara_matching:
-                        yara_matching = _Intel(f, self.params)
-                    else:
-                        setattr(yara_matching, 'path', f)
-                    rules = yara_matching.process()
-                    if rules:
-                        self.zip_file.record(f)
-                        try:
-                            yield f, str(rules), self._process_hash(f), 'yara', self._timestamp(f), os.stat(f).st_size == 0
-                        except Exception as e:
-                            yield f, str(rules), 'Permission denied', str(e), self._timestamp(f), os.stat(f).st_size == 0
-                ext = os.path.splitext(f)[1][1:]
-                if self._filtered_size(f):
-                    mime_filter, mime_zip, mime = self._filtered_magic(f)
-
-                    if self._is_PE(mime):
-                        if self.filtered_certificates:
-                            if not pe:
-                                pe = _PE(f, self.params)
-                                self.logger.debug("Create Singleton PE")
-                            else:
-                                setattr(pe, 'path', f)
-                            if pe.process():
-                                continue
-                    self.logger.debug("Certificats Check")
-                    zip_proc = False
-                    if self.zip_file:
-                        if self._filtered([mime_zip, self._filtered_ext(ext, self.zip_ext_file)]):
+                if self._filtered_by_date(f):
+                    if self.filtered_yara:
+                        if not yara_matching:
+                            yara_matching = _Intel(f, self.params)
+                        else:
+                            setattr(yara_matching, 'path', f)
+                        rules = yara_matching.process()
+                        if rules:
                             self.zip_file.record(f)
-                            zip_proc = True
-                    if self._filtered([mime_filter, self._filtered_ext(ext, self.ext_file)]):
-                        try:
-                            yield f, mime, self._process_hash(f), zip_proc, self._timestamp(f), os.stat(f).st_size == 0
-                        except Exception as e:
-                            yield f, mime, 'Permission denied', str(e), self._timestamp(f), os.stat(f).st_size == 0
+                            try:
+                                md5, sha1, sha256 = self._process_hashes(f)
+                                yield f, str(rules), md5, sha1, sha256, 'yara', self._get_creation_date(f), os.stat(
+                                    f).st_size == 0
+                            except Exception as e:
+                                yield f, str(rules), 'N/A', 'N/A', 'N/A', str(e), self._get_creation_date(f), os.stat(
+                                    f).st_size == 0
+                    ext = os.path.splitext(f)[1][1:]
+                    if self._filtered_size(f):
+                        mime_filter, mime_zip, mime = self._filtered_magic(f)
 
-    def _timestamp(self, f):
-        t = os.path.getctime(f) 
+                        if self._is_PE(mime):
+                            if self.filtered_certificates:
+                                if not pe:
+                                    pe = _PE(f, self.params)
+                                    self.logger.debug("Create Singleton PE")
+                                else:
+                                    setattr(pe, 'path', f)
+                                if pe.process():
+                                    continue
+                        self.logger.debug("Certificats Check")
+                        zip_proc = False
+                        if self.zip_file:
+                            if self._filtered([mime_zip, self._filtered_ext(ext, self.zip_ext_file)]):
+                                self.zip_file.record(f)
+                                zip_proc = True
+                        if self._filtered([mime_filter, self._filtered_ext(ext, self.ext_file)]):
+                            try:
+                                md5, sha1, sha256 = self._process_hashes(f)
+                                yield f, mime, md5, sha1, sha256, zip_proc, self._get_creation_date(f), os.stat(
+                                    f).st_size == 0
+                            except Exception as e:
+                                yield f, mime, 'N/A', 'N/A', 'N/A', str(e), self._get_creation_date(f), os.stat(
+                                    f).st_size == 0
+
+    def _get_creation_date(self, f):
+        t = os.path.getctime(f)
         date_value = datetime.datetime.fromtimestamp(t)
         return date_value
 
-    def _process_hash(self, f):
+    def _get_modification_date(self, f):
+        t = os.path.getmtime(f)
+        date_value = datetime.datetime.fromtimestamp(t)
+        return date_value
+
+    def _process_hashes(self, f):
         if hasattr(self, 'vss') and self.vss:
             return self.vss.process_hash_value(f)
         else:
-            return process_sha256(f)
+            return process_hashes(f)
+
+    def _filtered_by_date(self, f):
+        if self.limit_days == 'unlimited':
+            return True
+        return (datetime.datetime.now() - self._get_modification_date(f)).days < int(self.limit_days)
 
     def _filtered_magic(self, f):
         try:
@@ -139,19 +158,23 @@ class _FileCatcher(object):
     def _check_depth(self, f, directory):
         if self.dirs[directory] == '*':
             return True
-        return int(self.dirs[directory]) >= f[len(directory)+len(os.path.sep):].count(os.path.sep)
+        return int(self.dirs[directory]) >= f[len(directory) + len(os.path.sep):].count(os.path.sep)
+
+    def _get_url_VT(self,sha256):
+        url_vt = None
+        if 'N/A' in sha256:
+            url_vt = 'not URL VT'
+        else:
+            url_vt = unicode(VIRUS_TOTAL % sha256)
+        return url_vt
 
     def _csv_infos_fs(self, files):
-        with open(self.output_dir + '\\' + self.computer_name + '_Filecatcher.csv', 'wb') as fw:
+        with open(self.output_dir + '\\' + self.computer_name + '_Filecatcher' + self.rand_ext, 'wb') as fw:
             csv_writer = get_csv_writer(fw)
-            for f, mime, hashvalue, zip_value, datem, empty in files:
-                if 'Permission denied' in hashvalue:
-                    url_vt = 'not URL VT'
-                else:
-                    url_vt = unicode(VIRUS_TOTAL % hashvalue)
+            for f, mime, md5,sha1,sha256, zip_value, datem, empty in files:
                 write_to_csv([self.computer_name, 'Filecatcher', unicode(datem),
-                              unicode(f), unicode(hashvalue), unicode(mime),
-                              unicode(zip_value), unicode(empty), url_vt], csv_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_Filecatcher.csv',
+                              unicode(f), unicode(md5), unicode(sha1), unicode(sha256), unicode(mime),
+                              unicode(zip_value), unicode(empty), self._get_url_VT(sha256)], csv_writer)
+        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_Filecatcher' + self.rand_ext,
                            self.output_dir + '\\' + self.computer_name + '_sha256.log')
         self.zip_file.close()

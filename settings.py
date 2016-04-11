@@ -11,7 +11,8 @@ EXTRACT_DUMP = {
     "dd": "csv_export_dd",
     "ram": "csv_export_ram",
     "rekall": "csv_rekall_cmd",
-    "mbr": "csv_mbr"
+    "mbr": "csv_mbr",
+    "registry": "csv_registry"
 }
 
 FILTERS_MAGIC = {"application/msword",
@@ -57,17 +58,16 @@ WORDSIZE = 2
 DWORDSIZE = 4
 
 USERS_FOLDER = {
-    "Windows10": "C:\\Users",
-    "Windows8": "C:\\Users",
-    "Windows8_1": "C:\\Users",
-    "Windows7": "C:\\Users",
-    "Windows2012Server":"C:\\User",
-    "Windows2012ServerR2":"C:\\User",
-    "WindowsXP": "C:\\Users",
-    "WindowsVista": "C:\\Users",
-    "Windows2008ServerR2": "C:\\Users",
-    "Windows2008Server": "C:\\Users",
-    "WindowsXP": "C\Documents and Settings",
-    "Windows2003Server": "C\Documents and Settings",
-    "Windows2003ServerR2": "C\Documents and Settings"
+    "Windows10": os.path.join(os.environ['HOMEDRIVE'],'Users'),
+    "Windows8": os.path.join(os.environ['HOMEDRIVE'],'Users'),
+    "Windows8_1": os.path.join(os.environ['HOMEDRIVE'],'Users'),
+    "Windows7": os.path.join(os.environ['HOMEDRIVE'],'Users'),
+    "Windows2012Server": os.path.join(os.environ['HOMEDRIVE'],'Users'),
+    "Windows2012ServerR2": os.path.join(os.environ['HOMEDRIVE'],'Users'),
+    "WindowsXP": os.path.join(os.environ['HOMEDRIVE'], 'Documents and Settings'),
+    "WindowsVista": os.path.join(os.environ['HOMEDRIVE'],'Users'),
+    "Windows2008ServerR2": os.path.join(os.environ['HOMEDRIVE'],'Users'),
+    "Windows2008Server": os.path.join(os.environ['HOMEDRIVE'],'Users'),
+    "Windows2003Server": os.path.join(os.environ['HOMEDRIVE'], 'Documents and Settings'),
+    "Windows2003ServerR2": os.path.join(os.environ['HOMEDRIVE'], 'Documents and Settings')
 }
