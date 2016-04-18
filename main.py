@@ -164,9 +164,14 @@ def profile_used(path, param_options):
         param_options["mft_export"] = config.get("dump", "mft_export")
 
     if config.has_section("registry"):
-        param_options["custom_registry_keys"] = config.get("registry", "custom_registry_keys")
-        param_options["registry_recursive"] = yaml.load(config.get("registry", "registry_recursive"))
-        param_options["get_autoruns"] = yaml.load(config.get('registry', "get_autoruns"))
+        if config.has_option("registry","custom_registry_keys"):
+            param_options["custom_registry_keys"] = config.get("registry", "custom_registry_keys")
+            param_options["registry_recursive"] = yaml.load(config.get("registry", "registry_recursive"))
+        if config.has_option('registry','get_autoruns'):
+            param_options["get_autoruns"] = yaml.load(config.get('registry', "get_autoruns"))
+        else:
+            param_options["get_autoruns"] = False
+
     if config.has_section('modules'):
         for module in config.options('modules'):
             for module_option in config.options(module):

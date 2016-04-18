@@ -6,7 +6,7 @@ random=False
 dump=mft,ram,mbr,registry
 mft_export=True
 [registry]
-custom_registry_keys="HKU\SOFTWARE\Locky"
+custom_registry_keys="HKCU\SOFTWARE\Locky"
 registry_recursive=False
 get_autoruns=True
 [output]

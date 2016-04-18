@@ -45,7 +45,7 @@ class _FileCatcher(object):
             lst = _ListFiles(directory, self.logger)
 
             for f in lst.list_files(directory):
-                if self._filtered_by_date(f):
+                if self._filtered_by_date(f) and self._filtered_size(f):
                     if self.filtered_yara:
                         if not yara_matching:
                             yara_matching = _Intel(f, self.params)
@@ -61,8 +61,7 @@ class _FileCatcher(object):
                             except Exception as e:
                                 yield f, str(rules), 'N/A', 'N/A', 'N/A', str(e), self._get_creation_date(f), os.stat(
                                     f).st_size == 0
-                    ext = os.path.splitext(f)[1][1:]
-                    if self._filtered_size(f):
+                        ext = os.path.splitext(f)[1][1:]
                         mime_filter, mime_zip, mime = self._filtered_magic(f)
 
                         if self._is_PE(mime):
@@ -88,6 +87,9 @@ class _FileCatcher(object):
                             except Exception as e:
                                 yield f, mime, 'N/A', 'N/A', 'N/A', str(e), self._get_creation_date(f), os.stat(
                                     f).st_size == 0
+                else:
+                    self.logger.warn('file %s not cache by size %s or date %s' % (f, os.stat(f).st_size, self._get_modification_date(f)))
+
 
     def _get_creation_date(self, f):
         t = os.path.getctime(f)

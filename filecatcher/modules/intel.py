@@ -18,14 +18,19 @@ class _Intel(_Base_Modules):
             return None
 
     def _load_yara_rules(self):
-        namespaces = dict([(os.path.basename(n), n) for n in glob.glob(os.path.join(os.path.abspath(self.dir_rules), '*.yar'))])
-        return yara.compile(filepaths=namespaces)
+        namespaces = dict([(os.path.basename(n), n) for n in glob.glob(os.path.join(os.path.abspath(self.dir_rules), '*.yar')) if os.path.isdir(self.dir_rules)])
+        if namespaces:
+            return yara.compile(filepaths=namespaces)
+        return {}
 
     def _is_match(self):
         try:
             with open(self.path, 'rb') as f:
-                matches = self.rules.match(data=f.read())
-                return matches
+                if self.rules:
+                    matches = self.rules.match(data=f.read())
+                    return matches
+                else:
+                    return []
         except IOError as e:
             self.params['logger'].error(str(e))
-            return None
+            return []
