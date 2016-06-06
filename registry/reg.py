@@ -330,7 +330,7 @@ class _Reg(object):
         """
         hive_list = self._get_list_from_registry_key(registry_obj.HKEY_LOCAL_MACHINE, path, is_recursive=is_recursive)
         for item in hive_list:
-            if item[KEY_VALUE_STR] == "VALUE":
+            if item[KEY_VALUE_STR] in ("VALUE", "ROOT_KEY"):
                 try:
                     value_data = item[VALUE_DATA].decode('UTF-16')
                     if '\x00' not in value_data:
@@ -416,6 +416,8 @@ class _Reg(object):
         hive_list = []
         root_key = registry_obj.get_registry_key(hive, key_path)
         if root_key:
+            hive_list.append(("ROOT_KEY", root_key.get_name(), "", "", root_key.get_last_written_time(),
+                              root_key.get_path()))
             append_reg_values(hive_list, root_key)
             for i in xrange(root_key.get_number_of_sub_keys()):
                 sub_key = root_key.get_sub_key(i)

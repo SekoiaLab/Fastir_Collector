@@ -41,11 +41,12 @@ class _FileCatcher(object):
         yara_matching = None
         self.logger.warn('Dirs: ' + str(self.dirs) + 'to catch')
         for directory in self.dirs:
-            directory = self._changeroot(directory)
-            lst = _ListFiles(directory, self.logger)
+            shadow_directory = self._changeroot(directory)
+            lst = _ListFiles(shadow_directory, self.logger)
 
-            for f in lst.list_files(directory):
-                if self._filtered_by_date(f) and self._filtered_size(f):
+            for f in lst.list_files(shadow_directory):
+                zip_proc = False
+                if self._filtered_by_date(f) and self._filtered_size(f) and self._check_depth(f,self.dirs[directory], shadow_directory):
                     if self.filtered_yara:
                         if not yara_matching:
                             yara_matching = _Intel(f, self.params)
@@ -61,8 +62,7 @@ class _FileCatcher(object):
                             except Exception as e:
                                 yield f, str(rules), 'N/A', 'N/A', 'N/A', str(e), self._get_creation_date(f), os.stat(
                                     f).st_size == 0
-                        ext = os.path.splitext(f)[1][1:]
-                        mime_filter, mime_zip, mime = self._filtered_magic(f)
+
 
                         if self._is_PE(mime):
                             if self.filtered_certificates:
@@ -75,21 +75,27 @@ class _FileCatcher(object):
                                     continue
                         self.logger.debug("Certificats Check")
                         zip_proc = False
-                        if self.zip_file:
-                            if self._filtered([mime_zip, self._filtered_ext(ext, self.zip_ext_file)]):
-                                self.zip_file.record(f)
-                                zip_proc = True
-                        if self._filtered([mime_filter, self._filtered_ext(ext, self.ext_file)]):
-                            try:
-                                md5, sha1, sha256 = self._process_hashes(f)
-                                yield f, mime, md5, sha1, sha256, zip_proc, self._get_creation_date(f), os.stat(
-                                    f).st_size == 0
-                            except Exception as e:
-                                yield f, mime, 'N/A', 'N/A', 'N/A', str(e), self._get_creation_date(f), os.stat(
-                                    f).st_size == 0
-                else:
-                    self.logger.warn('file %s not cache by size %s or date %s' % (f, os.stat(f).st_size, self._get_modification_date(f)))
 
+                    ext = os.path.splitext(f)[1][1:]
+                    mime_filter, mime_zip, mime = self._filtered_magic(f)
+                    if self.zip_file:
+                        if self._filtered([mime_zip, self._filtered_ext(ext, self.zip_ext_file)]):
+                            self.zip_file.record(f)
+                            zip_proc = True
+                    if self._filtered([mime_filter, self._filtered_ext(ext, self.ext_file)]):
+                        try:
+                            md5, sha1, sha256 = self._process_hashes(f)
+                            yield f, mime, md5, sha1, sha256, zip_proc, self._get_creation_date(f), os.stat(
+                                f).st_size == 0
+                        except Exception as e:
+                            yield f, mime, 'N/A', 'N/A', 'N/A', str(e), self._get_creation_date(f), os.stat(
+                                f).st_size == 0
+                else:
+                    try:
+                        self.logger.warn('file %s not cache by size %s or date %s' % (f, os.stat(f).st_size, self._get_modification_date(f)))
+                    except Exception as e:
+                        self.logger.error(e)
+                        self.logger.error(f)
 
     def _get_creation_date(self, f):
         t = os.path.getctime(f)
@@ -110,8 +116,12 @@ class _FileCatcher(object):
     def _filtered_by_date(self, f):
         if self.limit_days == 'unlimited':
             return True
-        return (datetime.datetime.now() - self._get_modification_date(f)).days < int(self.limit_days)
+        try:
 
+            return (datetime.datetime.now() - self._get_modification_date(f)).days < int(self.limit_days)
+        except Exception as e:
+            self.logger.error(e)
+            return True
     def _filtered_magic(self, f):
         try:
             mime = sekoiamagic(f)
@@ -157,10 +167,10 @@ class _FileCatcher(object):
         else:
             return False
 
-    def _check_depth(self, f, directory):
-        if self.dirs[directory] == '*':
+    def _check_depth(self, f,depth, directory):
+        if depth == '*':
             return True
-        return int(self.dirs[directory]) >= f[len(directory) + len(os.path.sep):].count(os.path.sep)
+        return int(depth) >= f[len(directory) + len(os.path.sep):].count(os.path.sep)
 
     def _get_url_VT(self,sha256):
         url_vt = None
