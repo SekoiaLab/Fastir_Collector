@@ -383,7 +383,7 @@ def main(param_options):
     if "mount_letter" in param_options:
         unmount_share(param_options["mount_letter"])
 
-
+    param_options['logger'].info('Check here %s for yours results' % os.path.abspath(param_options['output_dir']))
 if __name__ == "__main__":
     # Add multiprocessing support when frozen with pyinstaller
     if hasattr(sys, "frozen"):
