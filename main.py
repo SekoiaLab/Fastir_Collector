@@ -317,15 +317,17 @@ def set_options():
     param_options = set_environment_options(param_options)
 
     # if share and output are both specified, create output folder in share
-    if "output_share" in param_options:
-        mount_letter = mount_share(param_options["output_share"],
-                                   param_options["share_login"],
-                                   param_options["share_password"])
-        param_options["output_dir"] = create_output_dir(param_options["output_dir"], mount_letter)
-        param_options["mount_letter"] = mount_letter
-    else:
-        param_options["output_dir"] = create_output_dir(param_options["output_dir"])
-
+    try:
+        if "output_share" in param_options:
+            mount_letter = mount_share(param_options["output_share"],
+                                       param_options["share_login"],
+                                       param_options["share_password"])
+            param_options["output_dir"] = create_output_dir(param_options["output_dir"], mount_letter)
+            param_options["mount_letter"] = mount_letter
+        else:
+            param_options["output_dir"] = create_output_dir(param_options["output_dir"])
+    except Exception as e:
+            param_options["output_dir"] = create_output_dir(os.path.join(os.path.dirname(__file__),param_options["output_dir"]))
     return param_options
 
 
@@ -378,7 +380,7 @@ def main(param_options):
     # Delete all shadow copies created during the acquisition process
     _VSS._close_instances()
 
-    if "output_share" in param_options:
+    if "mount_letter" in param_options:
         unmount_share(param_options["mount_letter"])
 
 
