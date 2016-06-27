@@ -13,11 +13,11 @@ This tool collects different artefacts on live Windows and records the results i
 - pytz
 
 ## Execution
-- ./fastIR_x64.py -h for help
-- ./fastIR_x64.py --packages all  extract all artefacts without dump package artefacts
-- ./fastIR_x64.py --packages dump --dump mft to extract MFT
-- ./fastIR_x64.py --packages all --ouput_dir your_ouput_dir to set the directory output (by default is the current directory)
-- ./fastIR_x64.py --profile you_file_profile to set your own profile extraction
+- ./fastIR_x64.exe -h for help
+- ./fastIR_x64.exe --packages fast  extract all artefacts without dump package artefacts
+- ./fastIR_x64.exe --packages dump --dump mft to extract MFT
+- ./fastIR_x64.exe --packages all --ouput_dir your_ouput_dir to set the directory output (by default is the current directory)
+- ./fastIR_x64.exe --profile you_file_profile to set your own profile extraction
 
 ## Packages
 
@@ -51,6 +51,7 @@ Packages Lists and Artefact
     * Autoruns
     * USB History
     * Userassists
+    * Networks List
 
   * memory
     * Clipboard
@@ -58,12 +59,16 @@ Packages Lists and Artefact
     * Opened Files
 
   * dump
-    * MFT we use AnalyseMFT for https://github.com/dkovar/analyzeMFT
+    * MFT (raw or timeline) we use AnalyseMFT for https://github.com/dkovar/analyzeMFT
     * MBR
     * RAM
     * DISK
+    * Registry
+    * SAM
+    
   * FileCatcher
     * based on mime type
+    * Define path and depth to filter the search
     * possibility to filter your search
     * Yara Rules
     
