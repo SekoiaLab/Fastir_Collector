@@ -75,3 +75,36 @@ class Windows7StateMachine(_Statemachine):
 
     def csv_list_kb(self):
         super(Windows7StateMachine, self)._csv_list_kb(self._list_kb())
+
+    def json_list_drives(self):
+        super(Windows7StateMachine, self)._json_list_drives(self._list_drives())
+
+    def json_list_network_drives(self):
+        super(Windows7StateMachine, self)._json_list_network_drives(self._list_network_drives())
+
+    def json_list_share(self):
+        super(Windows7StateMachine, self)._json_list_share(self._list_share())
+
+    def json_list_running_proccess(self):
+        super(Windows7StateMachine, self)._json_list_running_process(self._list_running())
+
+    def json_hash_running_proccess(self):
+        super(Windows7StateMachine, self)._json_hash_running_process(self._list_running())
+
+    def json_list_sessions(self):
+        super(Windows7StateMachine, self)._json_list_sessions(self._list_sessions())
+
+    def json_list_arp_table(self):
+        super(Windows7StateMachine, self)._json_list_arp_table(self._list_arp_table())
+
+    def json_list_route_table(self):
+        super(Windows7StateMachine, self)._json_list_route_table(self._list_route_table())
+
+    def json_list_sockets_networks(self):
+        super(Windows7StateMachine, self)._json_list_sockets_network(self._list_sockets_network())
+
+    def json_list_services(self):
+        super(Windows7StateMachine, self)._json_list_services(self._list_services())
+
+    def json_list_kb(self):
+        super(Windows7StateMachine, self)._json_list_kb(self._list_kb())

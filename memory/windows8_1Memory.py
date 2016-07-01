@@ -11,3 +11,9 @@ class Windows8_1Memory(_Memory):
 
     def csv_all_modules_opened_files(self):
         super(Windows8_1Memory, self)._csv_all_modules_opened_files()
+
+    def json_all_modules_dll(self):
+        super(Windows8_1Memory, self)._json_all_modules_dll()
+
+    def json_all_modules_opened_files(self):
+        super(Windows8_1Memory, self)._json_all_modules_opened_files()

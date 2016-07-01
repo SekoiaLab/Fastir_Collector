@@ -16,7 +16,7 @@ import csv
 import os
 from optparse import OptionParser
 import mft
-
+from utils.utils import get_json_writer, write_to_json
 SIAttributeSizeXP = 72
 SIAttributeSizeNT = 48
 
@@ -24,7 +24,7 @@ SIAttributeSizeNT = 48
 class _MftSession:
     'Class to describe an entire MFT processing session'
 
-    def __init__(self, logger, filename=None, output=None):
+    def __init__(self, logger, filename=None, output=None, json_output=False):
         self.mft = {}
         self.fullmft = {}
         self.folders = {}
@@ -34,7 +34,7 @@ class _MftSession:
         self.filename = filename
         self.output = output
         self.logger.info('Analyzing MFT : ' + filename)
-
+        self.json = True
     def open_files(self):
         try:
             self.file_mft = open(self.filename, 'rb')
@@ -43,7 +43,11 @@ class _MftSession:
             sys.exit()
 
         try:
-            self.file_csv = csv.writer(open(self.output, 'wb'), delimiter='|', dialect=csv.excel, quoting=1)
+            if not self.json:
+                self.file_csv = csv.writer(open(self.output, 'wb'), delimiter='|', dialect=csv.excel, quoting=1)
+            else:
+                self.json_writer = get_json_writer(open(self.output,'wb'))
+
         except (IOError, TypeError):
             self.logger.error("Unable to open file: %s" % self.output)
             sys.exit()
@@ -66,8 +70,10 @@ class _MftSession:
         self.file_mft.seek(0)
         raw_record = self.file_mft.read(1024)
 
-        if self.output != None:
+        if self.output != None and not self.json:
             self.file_csv.writerow(mft.mft_to_csv(None, True))
+        elif self.output != None and self.json:
+            self.header = mft.mft_to_csv(None, True)
 
         while raw_record != "":
             record = {}
@@ -88,9 +94,10 @@ class _MftSession:
             raw_record = self.file_mft.read(1024)
 
     def do_output(self, record):
-        if self.output != None:
+        if self.output != None and not self.json:
             self.file_csv.writerow(mft.mft_to_csv(record, False))
-
+        elif self.output != None and self.json:
+            write_to_json(self.header, mft.mft_to_csv(record, False), self.json_writer)
         if self.num_records % (self.mftsize / 5) == 0 and self.num_records > 0:
             self.logger.info('Building MFT: {0:.0f}'.format(100.0 * self.num_records / self.mftsize) + '%')
 

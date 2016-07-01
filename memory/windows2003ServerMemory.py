@@ -11,3 +11,9 @@ class Windows2003ServerMemory(_Memory):
 
     def csv_all_modules_opened_files(self):
         super(Windows2003ServerMemory, self)._csv_all_modules_opened_files()
+
+    def json_all_modules_dll(self):
+        super(Windows2003ServerMemory, self)._json_all_modules_dll()
+
+    def json_all_modules_opened_files(self):
+        super(Windows2003ServerMemory, self)._json_all_modules_opened_files()

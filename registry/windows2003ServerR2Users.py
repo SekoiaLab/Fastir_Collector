@@ -13,3 +13,10 @@ class Windows2003ServerR2UserReg(_Reg):
 
     def csv_user_assist(self):
         super(Windows2003ServerR2UserReg, self)._csv_user_assist(-6, False)
+
+    def json_open_save_mru(self):
+        super(Windows2003ServerR2UserReg, self)._json_open_save_mru(
+            r"Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSaveMRU")
+
+    def json_user_assist(self):
+        super(Windows2003ServerR2UserReg, self)._json_user_assist(-6, False)

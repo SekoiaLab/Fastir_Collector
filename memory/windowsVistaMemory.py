@@ -11,3 +11,10 @@ class WindowsVistaMemory(_Memory):
 
     def csv_all_modules_opened_files(self):
         super(WindowsVistaMemory, self)._csv_all_modules_opened_files()
+
+
+    def json_all_modules_dll(self):
+        super(WindowsVistaMemory, self)._json_all_modules_dll()
+
+    def json_all_modules_opened_files(self):
+        super(WindowsVistaMemory, self)._json_all_modules_opened_files()

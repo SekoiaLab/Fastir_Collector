@@ -9,3 +9,6 @@ class WindowsXPEvt(_EventLogs):
 
     def csv_event_logs(self):
         super(WindowsXPEvt, self)._csv_event_logs(True)
+
+    def json_event_logs(self):
+        super(WindowsXPEvt, self)._json_event_logs(True)

@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 import codecs
-from utils.utils import convert_windate, dosdate, get_csv_writer, write_list_to_csv,process_hashes
+from utils.utils import convert_windate, dosdate, get_csv_writer, get_json_writer,write_list_to_json,write_dict_json, write_list_to_csv,process_hashes
 import registry_obj
 from win32com.shell import shell
 import struct
@@ -13,7 +13,7 @@ import re
 from utils.utils import regex_patern_path
 import os
 from filecatcher.archives import _Archives
-
+import datetime
 KEY_VALUE_STR = 0
 VALUE_NAME = 1
 VALUE_DATA = 2
@@ -272,6 +272,8 @@ class _Reg(object):
         if params["output_dir"] and params["computer_name"]:
             self.computer_name = params["computer_name"]
             self.output_dir = params["output_dir"]
+        if params['destination']:
+            self.destination = params['destination']
         if params["custom_registry_keys"]:
             self.exec_custom_registry_keys = True
             self.custom_registry_keys = params["custom_registry_keys"]
@@ -425,11 +427,11 @@ class _Reg(object):
                     construct_list_from_key(hive_list, sub_key, is_recursive)
         return hive_list
 
-    def _csv_user_assist(self, count_offset, is_win7_or_further):
+    def __get_user_assist(self,count_offset, is_win7_or_further):
         """
-        Extracts information from UserAssist registry key which contains information about executed programs
-        The count offset is for Windows versions before 7, where it would start at 6
-        """
+            Extracts information from UserAssist registry key which contains information about executed programs
+            The count offset is for Windows versions before 7, where it would start at 6
+            """
         self.logger.info("Extracting user assist")
         path = r"Software\Microsoft\Windows\CurrentVersion\Explorer\\UserAssist"
         count = "\Count"
@@ -479,9 +481,64 @@ class _Reg(object):
                                         item[KEY_VALUE_STR],
                                         registry_obj.get_str_type(item[VALUE_TYPE]),
                                         str_value_name) + tuple(data))
+        return to_csv_list
+
+
+    def _get_network_list(self, key):
+        to_csv_list = []
+        self._generate_hklm_csv_list(to_csv_list, 'network _list', key, is_recursive=True)
+        result = {}
+        for item in to_csv_list[1:]:
+            if not item[4] in result:
+                result[item[4]] = {'Profilename': '', 'DateCreated': '', 'DateLastConnected': '', 'Description': ''}
+            if item[5] == 'ProfileName':
+                result[item[4]]['Profilename'] = item[8]
+            elif item[5] == 'Description':
+                result[item[4]]['Description'] = item[8]
+            elif item[5] == 'DateCreated':
+                list_item = struct.unpack('<HHHHHHHH',item[8])
+                result[item[4]]['DateCreated'] = datetime.datetime(list_item[0], list_item[1], list_item[3]
+                                                                 , list_item[4], list_item[5],
+                                                                 list_item[6]).isoformat()
+            elif item[5] == 'DateLastConnected':
+                list_item = struct.unpack('<HHHHHHHH',item[8])
+                try:
+                    result[item[4]]['DateLastConnected'] = datetime.datetime(list_item[0], list_item[1],
+                                                                 list_item[3], list_item[4],
+                                                               list_item[5], list_item[6]).isoformat()
+                except:
+                    pass
+        return result
+
+    def _json_networks_list(self, key):
+
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir, '%s_network_list.json' % self.computer_name), 'ab') as output:
+                json_writer = get_json_writer(output)
+                result = self._get_network_list(key)
+                for v in result.values():
+                    write_dict_json(v, json_writer)
+
+    def _csv_networks_list(self, key):
+        with open(os.path.join(self.output_dir,'%s_network_list_%s' % (self.computer_name, self.rand_ext)), 'wb') as output:
+            csv_writer = get_csv_writer(output)
+            network_list_result = self._get_network_list(key)
+            arr_data = [v.values() for v in network_list_result.values()]
+            arr_data.insert(0,network_list_result.values()[0].keys())
+            write_list_to_csv(arr_data, csv_writer)
+
+
+    def _csv_user_assist(self, count_offset, is_win7_or_further):
+
         with open(self.output_dir + "\\" + self.computer_name + "_user_assist" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
-            write_list_to_csv(to_csv_list, csv_writer)
+            write_list_to_csv(self.__get_user_assist(count_offset, is_win7_or_further), csv_writer)
+
+    def _json_user_assist(self, count_offset, is_win7_or_further):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir, '%s_user_asist.json' % self.computer_name), 'wb') as output:
+                json_writer = get_json_writer(output)
+                write_list_to_json(self.__get_user_assist(count_offset,is_win7_or_further), json_writer)
 
     def _get_files_and_hashes(self, csv_files):
         csv_files_transform = []
@@ -507,7 +564,7 @@ class _Reg(object):
                                         ATTR_TYPE, ATTR_DATA, md5, sha1, sha256))
         return csv_files_transform
 
-    def _csv_open_save_mru(self, str_opensave_mru):
+    def __get_open_save_mru(self,str_opensave_mru):
         """Extracts OpenSaveMRU containing information about files selected in the Open and Save view"""
         # TODO : Win XP
         self.logger.info("Extracting open save MRU")
@@ -527,22 +584,42 @@ class _Reg(object):
                                         item[VALUE_NAME],
                                         item[KEY_VALUE_STR],
                                         registry_obj.get_str_type(item[VALUE_TYPE]), path))
+        return to_csv_list
+
+    def _csv_open_save_mru(self, str_opensave_mru):
+
         with open(self.output_dir + "\\" + self.computer_name + "_opensaveMRU" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
-            write_list_to_csv(to_csv_list, csv_writer)
+            write_list_to_csv(self.__get_open_save_mru(str_opensave_mru), csv_writer)
 
-    def csv_registry_services(self):
-        """Extracts services"""
+    def _json_open_save_mru(self,str_opensave_mru):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir, '%s_opensaveMRU.json' % self.computer_name), 'wb') as output:
+                json_writer = get_json_writer(output)
+                write_list_to_json(self.__get_open_save_mru(str_opensave_mru), json_writer)
+
+    def __get_registry_services(self):
         self.logger.info("Extracting services")
         path = r"System\CurrentControlSet\Services"
         to_csv_list = [("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
                         "ATTR_TYPE", "ATTR_DATA")]
         self._generate_hklm_csv_list(to_csv_list, "registry_services", path)
+        return to_csv_list
+
+    def csv_registry_services(self):
+        """Extracts services"""
+
         with open(self.output_dir + "\\" + self.computer_name + "_registry_services" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
-            write_list_to_csv(to_csv_list, csv_writer)
+            write_list_to_csv(self.__get_registry_services(), csv_writer)
 
-    def csv_recent_docs(self):
+    def json_registry_services(self):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir,'%s_registry_services.json' % self.computer_name),'wb') as output:
+                json_writer = get_json_writer(output)
+                write_list_to_json(self.__get_registry_services(),json_writer)
+
+    def __get_recents_docs(self):
         """Extracts information about recently opened files saved location and opened date"""
         self.logger.info("Extracting recent docs")
         path = r"Software\Microsoft\Windows\CurrentVersion\Explorer\RecentDocs"
@@ -563,26 +640,45 @@ class _Reg(object):
                                             item[KEY_VALUE_STR],
                                             registry_obj.get_str_type(item[VALUE_TYPE]),
                                             value_decoded))
+        return to_csv_list
+
+    def csv_recent_docs(self):
         with open(self.output_dir + "\\" + self.computer_name + "_recent_docs" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
-            write_list_to_csv(to_csv_list, csv_writer)
+            write_list_to_csv(self.__get_recents_docs(), csv_writer)
 
-    def csv_installer_folder(self):
+    def json_recent_docs(self):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir,'%s_recent_docs.json' % self.computer_name), 'wb') as output:
+                json_writer = get_json_writer(output)
+                write_list_to_json(self.__get_recents_docs(), json_writer)
+
+    def __get_install_folder(self):
         """Extracts information about folders which are created at installation"""
         self.logger.info("Extracting installer folders")
         path = r"Software\Microsoft\Windows\CurrentVersion\Installer\Folders"
         to_csv_list = [("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
                         "ATTR_TYPE", "ATTR_DATA")]
         self._generate_hklm_csv_list(to_csv_list, "installer_folder", path)
+        return to_csv_list
+
+    def csv_installer_folder(self):
+
         with open(self.output_dir + "\\" + self.computer_name + "_installer_folder" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
-            write_list_to_csv(to_csv_list, csv_writer)
+            write_list_to_csv(self.__get_install_folder(), csv_writer)
 
-    def csv_shell_bags(self):
+    def json_installer_folder(self):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir,'%s_installer_folder.json' % self.computer_name), 'wb') as output:
+                json_writer = get_json_writer(output)
+                write_list_to_json(self.__get_install_folder(), json_writer)
+
+    def __get_shell_bags(self):
         """
-        Extracts shellbags: size, view, icon and position of graphical windows
-        In particular, executed graphical programs will leave a key here
-        """
+            Extracts shellbags: size, view, icon and position of graphical windows
+            In particular, executed graphical programs will leave a key here
+            """
         self.logger.info("Extracting shell bags")
         paths = [r"Software\Microsoft\Windows\Shell\Bags",
                  r"Software\Microsoft\Windows\Shell\BagMRU"]
@@ -626,12 +722,21 @@ class _Reg(object):
                                             item[KEY_VALUE_STR],
                                             registry_obj.get_str_type(item[VALUE_TYPE]),
                                             item[VALUE_DATA]))
+        return to_csv_list
+
+    def csv_shell_bags(self):
 
         with open(self.output_dir + "\\" + self.computer_name + "_shellbags" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
-            write_list_to_csv(to_csv_list, csv_writer)
+            write_list_to_csv(self.__get_shell_bags(), csv_writer)
 
-    def csv_startup_programs(self):
+    def json_shell_bags(self):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir,'%s_shellbag.json' % self.computer_name),"wb") as output:
+                json_writer = get_json_writer(output)
+                write_list_to_json(self.__get_shell_bags(), json_writer)
+
+    def __get_startup_programs(self):
         """Extracts programs running at startup from various keys"""
         self.logger.info("Extracting startup programs")
         software = "Software"
@@ -675,46 +780,75 @@ class _Reg(object):
                                ("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
                                 "ATTR_TYPE", "ATTR_DATA", "MD5", "SHA1", "SHA256")
                                )
+        return to_csv_list
+
+    def csv_startup_programs(self):
 
         with open(self.output_dir + "\\" + self.computer_name + "_startup" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
-            write_list_to_csv(to_csv_list, csv_writer)
+            write_list_to_csv(self.__get_startup_programs(), csv_writer)
 
-    def csv_installed_components(self):
+    def json_startup_programs(self):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir,'%s_startup.json' % self.computer_name),'wb') as output:
+                json_writer = get_json_writer(output)
+                write_list_to_json(self.__get_startup_programs(),json_writer)
+
+    def __get_installed_components(self):
         """
-        Extracts installed components key
-        When an installed component key is in HKLM but not in HKCU, the path specified in HKLM will be added in HKCU
-        and will be executed by the system
-        """
+            Extracts installed components key
+            When an installed component key is in HKLM but not in HKCU, the path specified in HKLM will be added in HKCU
+            and will be executed by the system
+            """
         self.logger.info("Extracting installed components")
         path = r"Software\Microsoft\Active Setup\Installed Components"
         to_csv_list = [("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
                         "ATTR_TYPE", "ATTR_DATA")]
         self._generate_hklm_csv_list(to_csv_list, "installed_components", path)
+        return to_csv_list
+
+    def csv_installed_components(self):
+
         with open(self.output_dir + "\\" + self.computer_name + "_installed_components" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
-            write_list_to_csv(to_csv_list, csv_writer)
+            write_list_to_csv(self.__get_installed_components(), csv_writer)
 
-    def csv_winlogon_values(self):
+    def json_installed_components(self):
+        if self.destination =='local':
+            with open(os.path.join(self.output_dir, '%s_installed_components.json' % self.computer_name),'wb') as ouput:
+                json_writer = get_json_writer(ouput)
+                write_list_to_json(self.__get_installed_components(),json_writer)
+
+    def __get_winlogon_values(self):
         """
-        Extracts winlogon values, in particular UserInit, where the specified executable will be executed at
-        system startup
-        """
+            Extracts winlogon values, in particular UserInit, where the specified executable will be executed at
+            system startup
+            """
         self.logger.info("Extracting winlogon values")
         path = r"Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
         to_csv_list = [("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
                         "ATTR_TYPE", "ATTR_DATA")]
         self._generate_hklm_csv_list(to_csv_list, "winlogon_values", path)
         self._generate_hku_csv_list(to_csv_list, "winlogon_values", path)
+        return to_csv_list
+
+    def csv_winlogon_values(self):
+
         with open(self.output_dir + "\\" + self.computer_name + "_winlogon_values" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
-            write_list_to_csv(to_csv_list, csv_writer)
+            write_list_to_csv(self.__get_winlogon_values(), csv_writer)
 
-    def csv_windows_values(self):
+    def json_winlogon_values(self):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir,'%s_winlogon_values.json' % self.computer_name), 'wb') as output:
+                json_writer = get_json_writer(output)
+                write_list_to_json(self.__get_winlogon_values(), json_writer)
+
+    def __get_windows_values(self):
         """
-        Extracts windows values, in particular AppInit_DLLs, where any DLL specified here will be loaded by any
-        application
-        """
+            Extracts windows values, in particular AppInit_DLLs, where any DLL specified here will be loaded by any
+            application
+            """
         self.logger.info("Extracting windows values")
         paths = [r"Software\Microsoft\Windows NT\CurrentVersion\Windows",
                  r"Software\Wow6432Node\Microsoft\Windows NT\CurrentVersion\Windows"]
@@ -722,18 +856,28 @@ class _Reg(object):
                         "ATTR_TYPE", "ATTR_DATA")]
         for path in paths:
             self._generate_hklm_csv_list(to_csv_list, "windows_values", path)
-        # self._generate_hku_csv_list(to_csv_list, "windows_values", path)
+            # self._generate_hku_csv_list(to_csv_list, "windows_values", path)
+        return to_csv_list
+
+    def csv_windows_values(self):
+
         with open(self.output_dir + "\\" + self.computer_name + "_windows_values" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
-            write_list_to_csv(to_csv_list, csv_writer)
+            write_list_to_csv(self.__get_windows_values(), csv_writer)
 
-    def csv_usb_history(self):
+    def json_windows_value(self):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir, '%s_windows_value.json' % self.computer_name),'wb') as output:
+                json_writer = get_json_writer(output)
+                write_list_to_json(self.__get_windows_values(), json_writer)
+
+    def __get_usb_history(self):
         """Extracts information about USB devices that have been connected since the system installation"""
         self.logger.info("Extracting USB history")
         hive_list = self._get_list_from_registry_key(
-                registry_obj.HKEY_LOCAL_MACHINE,
-                r"SYSTEM\CurrentControlSet\Control\DeviceClasses\{53f56307-b6bf-11d0-94f2-00a0c91efb8b}",
-                is_recursive=False)
+            registry_obj.HKEY_LOCAL_MACHINE,
+            r"SYSTEM\CurrentControlSet\Control\DeviceClasses\{53f56307-b6bf-11d0-94f2-00a0c91efb8b}",
+            is_recursive=False)
         to_csv_list = [("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "KEY_VALUE", "USB_ID")]
         for item in hive_list:
             if item[KEY_VALUE_STR] == "KEY":
@@ -745,26 +889,46 @@ class _Reg(object):
                                     item[KEY_PATH],
                                     item[KEY_VALUE_STR],
                                     usb_decoded))
+        return to_csv_list
+
+    def csv_usb_history(self):
         with open(self.output_dir + "\\" + self.computer_name + "_USBHistory" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
-            write_list_to_csv(to_csv_list, csv_writer)
+            write_list_to_csv(self.__get_usb_history(), csv_writer)
 
-    def csv_run_mru_start(self):
+    def json_usb_history(self):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir,'%s_USBHistory.json' % self.computer_name),"wb") as output:
+                json_writer = get_json_writer(output)
+                write_list_to_json(self.__get_usb_history(), json_writer)
+
+
+    def __get_run_mru_start(self):
         """Extracts run MRU, containing the last 26 oommands executed using the RUN command"""
         self.logger.info("Extracting Run MRU")
         path = r"Software\Microsoft\Windows\CurrentVersion\Explorer\RunMRU"
         to_csv_list = [("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
                         "ATTR_TYPE", "ATTR_DATA")]
         self._generate_hku_csv_list(to_csv_list, "run_MRU_start", path)
+        return to_csv_list
+
+    def csv_run_mru_start(self):
+
         with open(self.output_dir + "\\" + self.computer_name + "_run_MRU_start" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
-            write_list_to_csv(to_csv_list, csv_writer)
+            write_list_to_csv(self.__get_run_mru_start(), csv_writer)
 
-    def csv_custom_registry_keys(self):
+    def json_run_mru_start(self):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir,'%s_run_mru_start.json' % self.computer_name),'wb') as output:
+                json_writer = get_json_writer(output)
+                write_list_to_json(self.__get_run_mru_start(), json_writer)
+
+    def __get_custom_registry_keys(self):
         """
-        Extracts custom registry keys, the user specifies whether it should be recursive or not.
-        The list of registry keys to extract should be comma-separated
-        """
+            Extracts custom registry keys, the user specifies whether it should be recursive or not.
+            The list of registry keys to extract should be comma-separated
+            """
         if self.exec_custom_registry_keys:
             self.logger.info("Extracting custom registry keys")
             to_csv_list = [
@@ -784,6 +948,20 @@ class _Reg(object):
                     else:  # error
                         self.logger.warn("Must specify HKLM/HKEY_LOCAL_MACHINE or HKU/HKEY_USERS as hive")
                         return
+            return to_csv_list
+
+    def csv_custom_registry_keys(self):
+
             with open(self.output_dir + "\\" + self.computer_name + "_custom_registry_keys" + self.rand_ext, "wb") as output:
                 csv_writer = get_csv_writer(output)
-                write_list_to_csv(to_csv_list, csv_writer)
+                to_csv_list = self.__get_custom_registry_keys()
+                if to_csv_list:
+                    write_list_to_csv(to_csv_list, csv_writer)
+
+    def json_custom_registry_keys(self):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir, '%s_custom_registry.json' % self.computer_name ),'wb') as output:
+                to_json_list = self.__get_custom_registry_keys()
+                if to_json_list:
+                    json_writer = get_json_writer(output)
+                    write_list_to_json(to_json_list, json_writer)

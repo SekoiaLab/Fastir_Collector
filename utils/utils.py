@@ -22,8 +22,40 @@ import cStringIO
 import codecs
 import locale
 import ctypes
+import json
+import binascii
 
 regex_patern_path = '^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))'
+
+class UnicodeJsonDumper:
+    def __init__(self, output):
+        self.output = output
+
+    def list_to_json(self, list_json):
+        headers = list_json[0]
+        
+
+        for entry in list_json[1:]:
+            self.dump_json(
+                {h: entry[headers.index(h)] for h in headers}
+            )
+        pass
+
+    def dump_json(self, entry):
+        encodings = encodings = ["ascii", "utf-8", "latin1", "utf-16le", sys.stdin.encoding]
+        to_write = {}
+        for k, v in entry.items():
+            if v:
+                encoding, value = find_encoding(v)
+                if encoding:
+                    try:
+                        to_write[k] = value.decode(encoding).encode('utf-8', 'ignore')
+                    except UnicodeEncodeError:
+                        to_write[k] = binascii.b2a_hex(v).encode('UTF-8','ignore')
+                else:
+                    to_write[k] = ''.join([a for a in v]).encode('utf-8', 'ignore')
+        self.output.write(json.dumps(to_write))
+        pass
 
 class UnicodeWriter:
     """
@@ -39,26 +71,16 @@ class UnicodeWriter:
         self.encoder = codecs.getincrementalencoder(encoding)()
 
     def writerow(self, row):
-        encodings = ["ascii", "utf-8", "latin1", "utf-16le", sys.stdin.encoding]
         columns = []
         for s in row:
             if s:
-                found = False
-                for encoding in encodings:
+                encoding, value = find_encoding(s)
+                if encoding:
                     try:
-                        if type(s) != "str" and type(s) != "unicode":
-                            s = str(s).decode(encoding)
-                        elif type(s) == "str":
-                            s = s.decode(encoding)
-
-                        columns.append(s.decode(encoding).encode("utf-8", "ignore"))
-                        found = True
-                        break
+                        columns.append(value.decode(encoding).encode("utf-8", "ignore"))
                     except UnicodeEncodeError:
-                        pass
-                    except UnicodeDecodeError:
-                        pass
-                if not found:
+                        columns.append("".join([a for a in s]).encode("utf-8", "ignore"))
+                else:
                     # last hope
                     columns.append("".join([a for a in s]).encode("utf-8", "ignore"))
             else:
@@ -79,6 +101,21 @@ class UnicodeWriter:
         for row in rows:
             self.writerow(row)
 
+def find_encoding(value):
+    encodings = ["ascii", "utf-8", "latin1", "utf-16le", sys.stdin.encoding]
+    for encoding in encodings:
+        try:
+            if type(value) != "str" and type(value) != "unicode":
+                value = str(value).decode(encoding)
+            elif type(s) == "str":
+                value = value.decode(encoding)
+            return encoding, value
+
+        except UnicodeEncodeError:
+            pass
+        except UnicodeDecodeError:
+            pass
+    return None, None
 
 def decode_output_cmd(output):
     return output.decode(locale.getpreferredencoding())
@@ -341,6 +378,8 @@ def write_to_output(str_to_write, output, logger):
 def get_terminal_decoded_string(string):
     return string.decode(sys.stdout.encoding, "ignore")
 
+def get_json_writer(json_file):
+    return UnicodeJsonDumper(json_file)
 
 def get_csv_writer(csvfile):
     return UnicodeWriter(csvfile, quoting=csv.QUOTE_ALL)
@@ -355,6 +394,20 @@ def write_list_to_csv(arr_data, csv_writer):
     """Writes a list"s contents to a CSV file using UTF-8"""
     csv_writer.writerows(arr_data)
 
+
+def write_list_to_json(arr_data, json_writer):
+    """Write list data in json files using UTF-8"""
+    json_writer.list_to_json(arr_data)
+
+
+def write_to_json(header,arr_data,json_writer):
+    """Write data in json files using UTF-8"""
+    json_writer.dump_json({
+      header[arr_data.index(d)]: d for d in arr_data
+    })
+
+def write_dict_json(arr_data,json_writer):
+    json_writer.dump_json(arr_data)
 
 def get_architecture():
     if sys.maxsize > 2 ** 32:

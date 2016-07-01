@@ -35,3 +35,22 @@ class WindowsServer2003R2Files(_FS):
 
     def csv_firefox_history(self):
         super(WindowsServer2003R2Files, self)._csv_firefox_history(self._firefox_history())
+
+    def json_print_list_named_pipes(self):
+        super(WindowsServer2003R2Files, self)._json_list_named_pipes(self._list_named_pipes())
+
+    def json_print_list_windows_prefetch(self):
+        super(WindowsServer2003R2Files, self)._json_windows_prefetch(self._list_windows_prefetch())
+
+    def json_skype_history(self):
+        super(WindowsServer2003R2Files, self)._skype_history(['Application Data\Skype'])
+
+    def json_ie_history(self):
+        super(WindowsServer2003R2Files, self)._ie_history(['Local Settings\*\History.IE5'])
+
+    def json_firefox_downloads(self):
+        super(WindowsServer2003R2Files, self)._firefox_downloads(
+            ['Application Data\Mozilla\Firefox\Profiles\*.default\downloads.sqlite'])
+
+    def json_firefox_history(self):
+        super(WindowsServer2003R2Files, self)._json_firefox_history(self._firefox_history())

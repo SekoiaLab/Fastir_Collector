@@ -10,10 +10,10 @@ import sys
 import traceback
 
 import psutil
-from utils.utils import get_csv_writer, write_to_csv, record_sha256_logs
+from utils.utils import convert_windate, dosdate, get_csv_writer, get_json_writer,write_list_to_csv, write_list_to_json,process_hashes,record_sha256_logs
 import win32clipboard
 import win32api
-
+import win32security
 # if get_architecture()=='86':
 # print 'toto'
 # import dnscache_ext
@@ -92,10 +92,11 @@ GetLastError = windll.kernel32.GetLastError
 GetLastError.rettype = c_long
 
 
-def timer_open_files(proc, q):
+def timer_open_files(proc,q):
+    _Memory.seDebug()
     try:
         q.put(proc.open_files())
-    except:
+    except: 
         q.put(traceback.format_exc())
 
 
@@ -131,6 +132,21 @@ class _Memory(object):
         self.computer_name = params['computer_name']
         self.logger = params['logger']
         self.rand_ext = params['rand_ext']
+        if 'destination' in params:
+            self.destination = params['destination']
+
+    @staticmethod
+    def seDebug():
+        try:
+            """SEDebug"""
+            flags = win32security.TOKEN_ADJUST_PRIVILEGES | win32security.TOKEN_QUERY
+            htoken = win32security.OpenProcessToken(win32api.GetCurrentProcess(), flags)
+            id = win32security.LookupPrivilegeValue(None, "seDebugPrivilege")
+            newPrivileges = [(id, win32security.SE_PRIVILEGE_ENABLED)]
+            win32security.AdjustTokenPrivileges(htoken, 0, newPrivileges)
+        except Exception as e:
+            print 'je me vautre'
+            pass
 
     def _GetProcessModules(self, ProcessID, isPrint):
         me32 = MODULEENTRY32()
@@ -155,107 +171,144 @@ class _Memory(object):
         CloseHandle(hModuleSnap)
         return modules
 
-    def _csv_all_modules_dll(self):
+    def __get_all_modules_dll(self):
+        self.seDebug()
         """Outputs all processes and their opened dll in a csv"""
         hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
 
         pe32 = PROCESSENTRY32()
         pe32.dwSize = sizeof(PROCESSENTRY32)
         ret = Process32First(hProcessSnap, pointer(pe32))
+        to_csv_list =[("COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "MODULE")]
 
+
+        while ret:
+            modules = self._GetProcessModules(pe32.th32ProcessID, False)
+            if len(modules) > 0:
+                process_name = modules.pop(0)  # first element is the name of the process
+                for module in modules:
+                    to_csv_list.append((self.computer_name, 'processes_dll', unicode(pe32.th32ProcessID), process_name,
+                                  module))
+            ret = Process32Next(hProcessSnap, pointer(pe32))
+        return to_csv_list
+
+    def _csv_all_modules_dll(self):
         with open(self.output_dir + '\\' + self.computer_name + '_processes_dll' + self.rand_ext, 'wb') as output:
             csv_writer = get_csv_writer(output)
-            write_to_csv(["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "MODULE"], csv_writer)
-            while ret:
-                modules = self._GetProcessModules(pe32.th32ProcessID, False)
-                if len(modules) > 0:
-                    process_name = modules.pop(0)  # first element is the name of the process
-                    for module in modules:
-                        write_to_csv([self.computer_name, 'processes_dll', unicode(pe32.th32ProcessID), process_name,
-                                      module],
-                                     csv_writer)
-
-                ret = Process32Next(hProcessSnap, pointer(pe32))
+            write_list_to_csv(self.__get_all_modules_dll(), csv_writer)
         record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_processes_dll' + self.rand_ext,
                            self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
-    def _csv_all_modules_opened_files(self):
+    def _json_all_modules_dll(self):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir, '%s_processes.json' % self.computer_name),
+                      'wb') as output:
+                json_writer = get_json_writer(output)
+                write_list_to_json(self.__get_all_modules_dll(), json_writer)
+
+    def __get_all_modules_opened_files(self):
+        list_to_csv = [("COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "FILENAME")]
+        self.seDebug()
         """Outputs all processes and their opened files in a csv"""
         hProcessSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0)
 
         pe32 = PROCESSENTRY32()
         pe32.dwSize = sizeof(PROCESSENTRY32)
         ret = Process32First(hProcessSnap, pointer(pe32))
+        while ret:
+            try:
+                p = psutil.Process(pe32.th32ProcessID)
+                process_name = p.name()
+                self.logger.info(
+                    'Getting opened files for : ' + process_name + '(' + unicode(pe32.th32ProcessID) + ')')
+                # We need open a subprocess because get_open_files may hang forever
+                q = Queue()
+                process = Process(target=timer_open_files, args=(p, q,))
+                process.start()
+                # We wait for 2 seconds
+                process.join(2)
+                if process.is_alive():
+                    # If the subprocess is still alive, assume it is hanged and kill it
+                    q.close()
+                    process.terminate()
+                else:
+                    # Otherwise, continue normal processing
+                    opened_files = q.get()
+                    if isinstance(opened_files, list):
+                        for opened_file in opened_files:
+                            list_to_csv.append((self.computer_name, 'processes_opened_files', unicode(pe32.th32ProcessID),
+                                         process_name,
+                                         opened_file[0]))
+            except psutil.AccessDenied:
+                self.logger.warn('Could not open handle for PID : ' + unicode(pe32.th32ProcessID))
+            except psutil.NoSuchProcess:
+                self.logger.warn('Could not open handle for PID : ' + unicode(pe32.th32ProcessID))
+
+            ret = Process32Next(hProcessSnap, pointer(pe32))
+        return list_to_csv
+
+    def _csv_all_modules_opened_files(self):
 
         with open(self.output_dir + '\\' + self.computer_name + '_processes_opened_files' + self.rand_ext,
                   'wb') as output:
             csv_writer = get_csv_writer(output)
-            write_to_csv(["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "FILENAME"], csv_writer)
-            while ret:
-                try:
-                    p = psutil.Process(pe32.th32ProcessID)
-                    process_name = p.name()
-                    self.logger.info(
-                            'Getting opened files for : ' + process_name + '(' + unicode(pe32.th32ProcessID) + ')')
-                    # We need open a subprocess because get_open_files may hang forever
-                    q = Queue()
-                    process = Process(target=timer_open_files, args=(p, q,))
-                    process.start()
-                    # We wait for 2 seconds
-                    process.join(2)
-                    if process.is_alive():
-                        # If the subprocess is still alive, assume it is hanged and kill it
-                        q.close()
-                        process.terminate()
-                    else:
-                        # Otherwise, continue normal processing
-                        opened_files = q.get()
-                        if isinstance(opened_files, list):
-                            for opened_file in opened_files:
-                                write_to_csv(
-                                        [self.computer_name, 'processes_opened_files', unicode(pe32.th32ProcessID),
-                                         process_name,
-                                         opened_file[0]], csv_writer)
-                except psutil.AccessDenied:
-                    self.logger.warn('Could not open handle for PID : ' + unicode(pe32.th32ProcessID))
+            write_list_to_csv(self.__get_all_modules_opened_files(), csv_writer)
 
-                ret = Process32Next(hProcessSnap, pointer(pe32))
+
         record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_processes_opened_files' + self.rand_ext,
                            self.output_dir + '\\' + self.computer_name + '_sha256.log')
+
+    def _json_all_modules_opened_files(self):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir,'%s_processes_opened_files.json' % self.computer_name),'wb') as output:
+                json_writer = get_json_writer(output)
+                write_list_to_json(self.__get_all_modules_opened_files(), json_writer)
+
+    def __get_clipboard(self):
+        self.logger.info('Getting clipboard contents')
+
+        list_to_csv = [("COMPUTER_NAME", "TYPE", "DATA")]
+
+        r = None
+        try:
+            r = Tk()  # Using Tk instead because it supports exotic characters
+            data = r.selection_get(selection='CLIPBOARD')
+            r.destroy()
+            list_to_csv.append((self.computer_name, 'clipboard', unicode(data)))
+        except:
+            if r:  # Verify that r exists before calling destroy
+                r.destroy()
+            win32clipboard.OpenClipboard()
+            clip = win32clipboard.EnumClipboardFormats(0)
+            while clip:
+                try:
+                    format_name = win32clipboard.GetClipboardFormatName(clip)
+                except win32api.error:
+                    format_name = "?"
+                self.logger.info('format ' + unicode(clip) + ' ' + unicode(format_name))
+                if clip == 15:  # 15 seems to be a list of filenames
+                    filenames = win32clipboard.GetClipboardData(clip)
+                    for filename in filenames:
+                        list_to_csv.append((self.computer_name, 'clipboard', filename))
+                clip = win32clipboard.EnumClipboardFormats(clip)
+            win32clipboard.CloseClipboard()
+        return list_to_csv
 
     def csv_clipboard(self):
         """Exports the clipboard contents"""
         # TODO : what happens if clipboard contents is a CSV string ?
-        self.logger.info('Getting clipboard contents')
+
         with open(self.output_dir + '\\' + self.computer_name + '_clipboard' + self.rand_ext, 'wb') as output:
             csv_writer = get_csv_writer(output)
-            write_to_csv(["COMPUTER_NAME", "TYPE", "DATA"], csv_writer)
-
-            r = None
-            try:
-                r = Tk()  # Using Tk instead because it supports exotic characters
-                data = r.selection_get(selection='CLIPBOARD')
-                r.destroy()
-                write_to_csv([self.computer_name, 'clipboard', unicode(data)], csv_writer)
-            except:
-                if r:  # Verify that r exists before calling destroy
-                    r.destroy()
-                win32clipboard.OpenClipboard()
-                clip = win32clipboard.EnumClipboardFormats(0)
-                while clip:
-                    try:
-                        format_name = win32clipboard.GetClipboardFormatName(clip)
-                    except win32api.error:
-                        format_name = "?"
-                    self.logger.info('format ' + unicode(clip) + ' ' + unicode(format_name))
-                    if clip == 15:  # 15 seems to be a list of filenames
-                        filenames = win32clipboard.GetClipboardData(clip)
-                        for filename in filenames:
-                            write_to_csv([self.computer_name, 'clipboard', filename], csv_writer)
-                    clip = win32clipboard.EnumClipboardFormats(clip)
-                win32clipboard.CloseClipboard()
+            write_list_to_csv(self.__get_clipboard(), csv_writer)
         record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_clipboard' + self.rand_ext,
                            self.output_dir + '\\' + self.computer_name + '_sha256.log')
+
+    def json_clipboard(self):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir, '%s_clipboard.json' % self.computer_name), 'wb') as output:
+                json_writer = get_json_writer(output)
+                write_list_to_json(self.__get_clipboard(), json_writer)
 
         # 	def csv_dns_cache(self):
         # 		if get_architecture()=='86':

@@ -33,12 +33,12 @@ class _Dump(object):
             self.plugins = params['rekall']
         self.params = params
 
-    def csv_mft(self):
-        """Exports the MFT from each local drives and creates a csv from it."""
+    def __extract_mft(self):
         local_drives = get_local_drives()
         for local_drive in local_drives:
             self.logger.info('Exporting MFT for drive : ' + local_drive)
             ntfsdrive = file('\\\\.\\' + local_drive.replace('\\', ''), 'rb')
+            path_current_mft = self.output_dir + '\\' + self.computer_name + '_mft_' + local_drive[0] + '.mft'
             if os.name == 'nt':
                 # poor win can't seek a drive to individual bytes..only 1 sector at a time..
                 # convert MBR to stringio to make it seekable
@@ -75,7 +75,7 @@ class _Dump(object):
             mftDict = {}
             mftDict['attr_off'] = struct.unpack(b"<H", mftraw[20:22])[0]
             ReadPtr = mftDict['attr_off']
-            with open(self.output_dir + '\\' + self.computer_name + '_mft_' + local_drive[0] + '.mft', 'wb') as output:
+            with open(path_current_mft, 'wb') as output:
                 while ReadPtr < len(mftraw):
                     ATRrecord = decodeATRHeader(mftraw[ReadPtr:])
                     if ATRrecord['type'] == 0x80:
@@ -100,12 +100,27 @@ class _Dump(object):
                         break
                     if ATRrecord['len'] > 0:
                         ReadPtr = ReadPtr + ATRrecord['len']
-            # export on csv
+            yield path_current_mft
+
+    def csv_mft(self):
+        """Exports the MFT from each local drives and creates a csv from it."""
+        # export on csv
+        for path_current_mft in self.__extract_mft():
             if self.mft_export:
                 session = _MftSession(self.logger,
-                                      self.output_dir + '\\' + self.computer_name + '_mft_' + local_drive[0] + '.mft',
-                                      self.output_dir + '\\' + self.computer_name + '_mft_' + local_drive[0] +
-                                      self.rand_ext)
+                                      path_current_mft,
+                                      path_current_mft.replace('.mft', self.rand_ext)
+                                      )
+                session.open_files()
+                session.process_mft_file()
+
+    def json_mft(self):
+        for path_current_mft in self.__extract_mft():
+            if self.mft_export:
+                session = _MftSession(self.logger,
+                                      path_current_mft,
+                                      path_current_mft.replace('.mft', '.json')
+                                      ,True)
                 session.open_files()
                 session.process_mft_file()
 
@@ -120,6 +135,9 @@ class _Dump(object):
                         already = already + buff
                         r = fr.read(buff)
                         fw.write(r)
+
+    def json_export_dd(self):
+        self.csv_export_dd()
 
     def csv_export_ram(self):
         """Dump ram using winpmem"""
@@ -144,6 +162,9 @@ class _Dump(object):
                 win32file.CloseHandle(fd)
         finally:
             stop_and_delete_driver_service(hSvc)
+
+    def json_mbr(self):
+        self.csv_mbr()
 
     def csv_mbr(self):
         """Extract MBR and BootLoader"""
@@ -170,11 +191,20 @@ class _Dump(object):
         informations.listPartitions = partition.partition_information(informations.currentMachine)
         informations.save_informations()
 
-    def csv_registry(self):
-        arch = _Archives(os.path.join(self.output_dir,'dump_registry.zip'), self.logger)
+    def __get_registry(self):
+        arch = _Archives(os.path.join(self.output_dir, 'dump_registry.zip'), self.logger)
         if hasattr(self, 'root_reg'):
-            files_to_zip = [os.path.join(self.root_reg, f) for f in os.listdir(self.root_reg) if os.path.isfile(os.path.join(self.root_reg, f))]
+            files_to_zip = [os.path.join(self.root_reg, f) for f in os.listdir(self.root_reg) if
+                            os.path.isfile(os.path.join(self.root_reg, f))]
             path_ntuserdat = os.path.join(self.userprofile, '*', 'NTUSER.DAT')
-            files_to_zip.extend([ os.path.join(_VSS._get_instance(self.params,os.path.splitdrive(f)[0])._return_root(),os.path.splitdrive(f)[1]) for f in glob.glob(path_ntuserdat) if os.path.isfile(f)])
+            files_to_zip.extend([os.path.join(_VSS._get_instance(self.params, os.path.splitdrive(f)[0])._return_root(),
+                                              os.path.splitdrive(f)[1]) for f in glob.glob(path_ntuserdat) if
+                                 os.path.isfile(f)])
             for f in files_to_zip:
                 arch.record(f)
+
+    def csv_registry(self):
+        self.__get_registry()
+
+    def json_registry(self):
+        self.csv_registry()
