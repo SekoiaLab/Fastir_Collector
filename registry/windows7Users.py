@@ -28,3 +28,12 @@ class Windows7UserReg(_Reg):
     def json_networks_list(self):
         super(Windows7UserReg, self)._json_networks_list(
             r'Software\Microsoft\Windows NT\CurrentVersion\NetworkList\Profiles')
+            
+#***************************************************soheekim added***********************************************
+def csv_powerpoint_mru(self):
+        super(Windows7UserReg, self)._csv_powerpoint_mru(
+            r"Software\Microsoft\Office\16.0\PowerPoint\User MRU")
+def json_powerpoint_mru(self):
+        super(Windows7UserReg,self)._json_powerpoint_mru(
+            r"Software\Microsoft\Office\16.0\PowerPoint\User MRU")
+ #***************************************************soheekim added***********************************************           

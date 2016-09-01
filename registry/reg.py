@@ -597,7 +597,41 @@ class _Reg(object):
             with open(os.path.join(self.output_dir, '%s_opensaveMRU.json' % self.computer_name), 'wb') as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_open_save_mru(str_opensave_mru), json_writer)
+#****************************************************soheeKim added**************************************************
+ def  __get_powerpoint_mru(self,str_powerpoint_mru):
+        """Extracts PowerPoint user mru"""
+        # TODO : Win XP
+        self.logger.info("Extracting PowerPoint MRU")
+        hive_list = self._get_list_from_registry_key(registry_obj.HKEY_USERS, str_powerpoint_mru)
+        to_csv_list = [("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
+                        "ATTR_TYPE", "ATTR_DATA")]
+        for item in hive_list:
+            if item[KEY_VALUE_STR] == 'VALUE':
+                if item[VALUE_NAME] != "MRUListEx":
+                    pidl = shell.StringAsPIDL(item[VALUE_DATA])
+                    path = shell.SHGetPathFromIDList(pidl)
+                    to_csv_list.append((self.computer_name,
+                                        "PowerPointMRU",
+                                        item[VALUE_LAST_WRITE_TIME],
+                                        "HKEY_USERS",
+                                        item[VALUE_PATH],
+                                        item[VALUE_NAME],
+                                        item[KEY_VALUE_STR],
+                                        registry_obj.get_str_type(item[VALUE_TYPE]), path))
+        return to_csv_list
 
+    def _csv_PowerPoint_mru(self, str_powerpoint_mru):
+
+        with open(self.output_dir + "\\" + self.computer_name + "_powerpointMRU" + self.rand_ext, "wb") as output:
+            csv_writer = get_csv_writer(output)
+            write_list_to_csv(self.__get_powerpoint_mru(str_powerpoint_mru), csv_writer)
+
+    def _json_powerpoint_mru(self,str_powerpoint_mru):
+        if self.destination == 'local':
+            with open(os.path.join(self.output_dir, '%s_powerpointMRU.json' % self.computer_name), 'wb') as output:
+                json_writer = get_json_writer(output)
+                write_list_to_json(self.__get_powerpoint_mru(str_powerpoint_mru), json_writer)
+#****************************************************soheeKim added**************************************************
     def __get_registry_services(self):
         self.logger.info("Extracting services")
         path = r"System\CurrentControlSet\Services"
