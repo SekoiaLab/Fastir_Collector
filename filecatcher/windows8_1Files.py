@@ -19,3 +19,6 @@ class Windows8_1Files(_FileCatcher):
 
     def csv_print_infos_files(self):
         super(Windows8_1Files, self)._csv_infos_fs(self._list_files())
+
+    def json_print_infos_files(self):
+        super(Windows8_1Files, self)._json_infos_fs(self._list_files())

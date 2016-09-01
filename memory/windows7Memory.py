@@ -11,3 +11,11 @@ class Windows7Memory(_Memory):
 
     def csv_all_modules_opened_files(self):
         super(Windows7Memory, self)._csv_all_modules_opened_files()
+
+
+    def json_all_modules_dll(self):
+        super(Windows7Memory, self)._json_all_modules_dll()
+
+
+    def json_all_modules_opened_files(self):
+        super(Windows7Memory, self)._json_all_modules_opened_files()

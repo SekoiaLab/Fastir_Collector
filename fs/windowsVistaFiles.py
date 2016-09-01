@@ -43,3 +43,33 @@ class WindowsVistaFiles(_FS):
     def csv_firefox_downloads(self):
         super(WindowsVistaFiles, self)._firefox_downloads(
             ['AppData\Roaming\Mozilla\Firefox\Profiles\*.default\downloads.sqlite'])
+
+
+    def json_print_list_named_pipes(self):
+        super(WindowsVistaFiles, self)._json_list_named_pipes(self._list_named_pipes())
+
+
+    def json_print_list_windows_prefetch(self):
+        super(WindowsVistaFiles, self)._json_windows_prefetch(self._list_windows_prefetch())
+
+
+    def json_skype_history(self):
+        super(WindowsVistaFiles, self)._skype_history(['AppData\Roaming\Skype'])
+
+
+    def json_ie_history(self):
+        super(WindowsVistaFiles, self)._ie_history(['AppData\Local\Microsoft\Windows\*\History.IE5',
+                                                    'AppData\Local\Microsoft\Windows\*\Low\History.IE5'])
+
+
+    def json_firefox_history(self):
+        super(WindowsVistaFiles, self)._json_firefox_history(self._firefox_history())
+
+
+    def json_chrome_history(self):
+        super(WindowsVistaFiles, self)._json_chrome_history(self._chrome_history())
+
+
+    def json_firefox_downloads(self):
+        super(WindowsVistaFiles, self)._firefox_downloads(
+            ['AppData\Roaming\Mozilla\Firefox\Profiles\*.default\downloads.sqlite'])

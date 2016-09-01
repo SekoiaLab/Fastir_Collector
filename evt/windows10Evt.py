@@ -9,3 +9,6 @@ class Windows10Evt(_EventLogs):
 
     def csv_event_logs(self):
         super(Windows10Evt, self)._csv_event_logs(False)
+
+    def json_event_logs(self):
+        super(Windows10Evt, self)._json_event_logs(False)

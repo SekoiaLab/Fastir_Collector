@@ -26,3 +26,6 @@ class WindowsXPFiles(_FileCatcher):
 
     def csv_print_infos_files(self):
         super(WindowsXPFiles, self)._csv_infos_fs(self._list_files())
+
+    def json_print_infos_files(self):
+        super(WindowsXPFiles, self)._json_infos_fs(self._list_files())

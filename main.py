@@ -146,7 +146,10 @@ def profile_used(path, param_options):
         param_options["share_password"] = config.get("output", "share_password")
     else:
         param_options["share_password"] = None
-
+    if config.has_option('output', 'destination'):
+        param_options['destination'] = config.get('output', 'destination')
+    else:
+        param_options['destination'] = 'local'
     if config.has_section("filecatcher"):
         param_options["size_min"] = config.get("filecatcher", "size_min")
         param_options["size_max"] = config.get("filecatcher", "size_max")
@@ -159,9 +162,13 @@ def profile_used(path, param_options):
         param_options["all_users"] = yaml.load(config.get("filecatcher", "all_users"))
         param_options['compare'] = config.get('filecatcher', 'compare')
         param_options['limit_days'] = config.get('filecatcher', 'limit_days')
+
     if config.has_section("dump"):
         param_options["dump"] = config.get("dump", "dump")
-        param_options["mft_export"] = config.get("dump", "mft_export")
+        if config.has_option('dump', 'mft_export'):
+            param_options["mft_export"] = config.get("dump", "mft_export")
+        else:
+            param_options["mft_export"] = True
 
     if config.has_section("registry"):
         if config.has_option("registry","custom_registry_keys"):
@@ -171,6 +178,8 @@ def profile_used(path, param_options):
             param_options["get_autoruns"] = yaml.load(config.get('registry', "get_autoruns"))
         else:
             param_options["get_autoruns"] = False
+    else:
+        param_options['get_autoruns'] = False
 
     if config.has_section('modules'):
         for module in config.options('modules'):
@@ -187,6 +196,10 @@ def profile_used(path, param_options):
             param_options["rand_ext"] = '.csv'
     else:
         param_options["rand_ext"] = '.csv'
+
+    if config.has_section('env'):
+        for option in config.options('env'):
+            params[option] = config.get('env',option)
     return param_options
 
 
@@ -325,7 +338,7 @@ def set_options():
             param_options["output_dir"] = create_output_dir(param_options["output_dir"], mount_letter)
             param_options["mount_letter"] = mount_letter
         else:
-            param_options["output_dir"] = create_output_dir(param_options["output_dir"])
+            param_options["output_dir"] = create_output_dir(os.path.join(os.path.dirname(__file__),param_options["output_dir"]))
     except Exception as e:
             param_options["output_dir"] = create_output_dir(os.path.join(os.path.dirname(__file__),param_options["output_dir"]))
     return param_options
@@ -362,8 +375,12 @@ def main(param_options):
             if "dump" in str(cl):
                 for opt in param_options["dump"].split(","):
                     try:
-                        if param_options["output_type"] in EXTRACT_DUMP[opt]:
-                            getattr(instance, EXTRACT_DUMP[opt])()
+                        if opt in EXTRACT_DUMP:
+                            list_method = EXTRACT_DUMP[opt]
+
+                            for method in list_method:
+                                if method.startswith(param_options["output_type"]):
+                                    getattr(instance, method)()
                     except Exception:
                         param_options["logger"].error(traceback.format_exc())
                 continue

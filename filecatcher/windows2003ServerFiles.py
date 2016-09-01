@@ -14,3 +14,6 @@ class Windows2003ServerFiles(_FileCatcher):
 
     def csv_print_infos_files(self):
         super(Windows2003ServerFiles, self)._csv_infos_fs(self._list_files())
+
+    def json_print_infos_files(self):
+        super(Windows2003ServerFiles, self)._json_infos_fs(self._list_files())
