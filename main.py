@@ -48,7 +48,7 @@ def set_logger(param_options):
     fh.setFormatter(log_format)
     logger.addHandler(fh)
 
-    # initiatinig the stream handler
+    # initiating the stream handler
     fs = InfoStreamHandler(sys.stdout)
     fs.setFormatter(log_format)
     logger.addHandler(fs)
@@ -187,7 +187,7 @@ def profile_used(path, param_options):
                 param_options[module_option] = config.get(module, module_option)
     if config.has_section('extension'):
         if config.has_option('extension', 'random'):
-            if yaml.load(config.get("extension","random")):
+            if yaml.load(config.get("extension", "random")):
                 param_options["rand_ext"] = "." + "".join(
                     [random.SystemRandom().choice(string.ascii_lowercase) for _ in xrange(5)])
             else:
@@ -199,7 +199,7 @@ def profile_used(path, param_options):
 
     if config.has_section('env'):
         for option in config.options('env'):
-            params[option] = config.get('env',option)
+            param_options[option] = config.get('env', option)
     return param_options
 
 

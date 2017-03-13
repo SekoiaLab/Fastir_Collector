@@ -3,7 +3,7 @@ import os
 
 from filecatcher.listfiles import _ListFiles
 from settings import VIRUS_TOTAL
-from utils.utils import get_csv_writer, get_json_writer,write_to_csv, write_to_json,process_size, record_sha256_logs, \
+from utils.utils import get_csv_writer, get_json_writer, write_to_csv, write_to_json, process_size, record_sha256_logs,\
     process_hashes
 from utils.utils_rawstring import sekoiamagic
 import yaml

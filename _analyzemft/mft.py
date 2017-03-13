@@ -25,7 +25,7 @@ def parse_record(raw_record, isDebug):
     record['ads'] = 0
     record['datacnt'] = 0
 
-    decodeMFTHeader(record, raw_record);
+    decodeMFTHeader(record, raw_record)
 
     record_number = record['recordnum']
 

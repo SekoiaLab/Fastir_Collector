@@ -144,7 +144,7 @@ class _Statemachine(object):
 
     def _csv_list_running_process(self, list_running):
         self.logger.info("Health : Listing running processes")
-        with open(self.output_dir + 's%_processes'% self.computer_name + self.rand_ext, 'ab') as fw:
+        with open(self.output_dir + 's%_processes' % self.computer_name + self.rand_ext, 'ab') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "COMMAND", "EXEC_PATH"], csv_writer)
             for p in list_running:
