@@ -2,6 +2,7 @@
 from __future__ import unicode_literals
 from settings import FASTIR_ROOT
 import os
+import sys
 import inspect
 import importlib
 import pkgutil
@@ -27,10 +28,27 @@ def _iter_modules(packages):
         except ImportError:
             pass
 
-        for importer, modname, ispkg in pkgutil.iter_modules(imports):
-            # quick fix for winXP
-            if 'psutil' not in p and not modname.endswith('ext'):
-                yield importlib.import_module(p + '.' + modname)
+        # Workaround to detect imports when used as a binary.
+        # The issue comes from FrozenImporter in pyinstaller.
+        # Snippet from https://github.com/webcomics/dosage/blob/master/dosagelib/loader.py
+        if getattr(sys, 'frozen', False):
+            modules = []
+            importers = map(pkgutil.get_importer, imports)
+            toc = set()
+            for i in importers:
+                if hasattr(i, 'toc'):
+                    toc |= i.toc
+            for elm in toc:
+                modules.append(elm)
+            for module in modules:
+                if 'psutil' not in module and not module.endswith('ext') and module.startswith(p):
+                    yield importlib.import_module(module)
+        # Normal behavior.
+        else:
+            for importer, modname, ispkg in pkgutil.iter_modules(imports):
+                # quick fix for winXP
+                if 'psutil' not in p and not modname.endswith('ext'):
+                    yield importlib.import_module(p + '.' + modname)
 
 
 def load_classes(module, os_name, release):
