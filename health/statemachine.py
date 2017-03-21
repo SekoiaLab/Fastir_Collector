@@ -536,7 +536,7 @@ class _Statemachine(object):
                 json_writer = get_json_writer(fw)
 
                 headers = ["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "LOCAL_ADDR", "SOURCE_PORT", "REMOTE_ADDR",
-                          "REMOTE_PORT", "STATUS"]
+                           "REMOTE_PORT", "STATUS"]
                 for pid, name, local_address, source_port, remote_addr, remote_port, status in connections:
                     write_to_json(headers, [self.computer_name, 'sockets', unicode(pid),
                                   unicode(name), unicode(local_address), unicode(source_port),
@@ -567,7 +567,6 @@ class _Statemachine(object):
                                   unicode(processId), serviceType, pathName,
                                   unicode(status), state, startMode], json_writer)
 
-
     def _csv_list_kb(self, kbs):
         self.logger.info('Health : Listing KB installed on computer')
         with open(self.output_dir + '%s_kb' % self.computer_name + self.rand_ext, 'ab') as fw:
@@ -579,15 +578,13 @@ class _Statemachine(object):
                     [self.computer_name, 'kb', Caption, CSName, FixComments, HotFixID, InstallDate, InstalledOn, Name,
                      ServicePackInEffect, Status], csv_writer)
 
-
     def _json_list_kb(self, kbs):
         self.logger.info('Health : Listing KB installed on computer')
-        if self.destination =='local':
+        if self.destination == 'local':
             with open(os.path.join(self.output_dir + '%s_kb.json' % self.computer_name), 'ab') as fw:
                 json_writer = get_json_writer(fw)
                 headers = ["COMPUTER_NAME", "TYPE", "CAPTION", "CS_NAME", "FIX_COMMENTS", "HOTFIX_ID", "INSTALL_DATE",
-                          "INSTALLED_ON", "NAME", "SERVICE_PACK", "STATUS"]
+                           "INSTALLED_ON", "NAME", "SERVICE_PACK", "STATUS"]
                 for Caption, CSName, FixComments, HotFixID, InstallDate, InstalledOn, Name, ServicePackInEffect, Status in kbs:
-                    write_to_json(headers,[self.computer_name, 'kb', Caption, CSName, FixComments, HotFixID, InstallDate, InstalledOn, Name,
-                     ServicePackInEffect, Status]
-                        , json_writer)
+                    write_to_json(headers, [self.computer_name, 'kb', Caption, CSName, FixComments, HotFixID, InstallDate,
+                                            InstalledOn, Name, ServicePackInEffect, Status], json_writer)

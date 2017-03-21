@@ -56,7 +56,7 @@ class Windows2008ServerStateMachine(_Statemachine):
         super(Windows2008ServerStateMachine, self)._csv_list_running_process(self._list_running())
 
     def csv_hash_running_proccess(self):
-        super(Windows10StateMachine, self)._csv_hash_running_process(self._list_running())
+        super(Windows2008ServerStateMachine, self)._csv_hash_running_process(self._list_running())
 
     def csv_list_sessions(self):
         super(Windows2008ServerStateMachine, self)._csv_list_sessions(self._list_sessions())
@@ -95,7 +95,7 @@ class Windows2008ServerStateMachine(_Statemachine):
         super(Windows2008ServerStateMachine, self)._json_list_running_process(self._list_running())
 
     def json_hash_running_proccess(self):
-        super(Windows10StateMachine, self)._json_hash_running_process(self._list_running())
+        super(Windows2008ServerStateMachine, self)._json_hash_running_process(self._list_running())
 
     def json_list_sessions(self):
         super(Windows2008ServerStateMachine, self)._json_list_sessions(self._list_sessions())

@@ -27,6 +27,7 @@ import binascii
 
 regex_patern_path = '^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))'
 
+
 class UnicodeJsonDumper:
     def __init__(self, output):
         self.output = output
@@ -56,6 +57,7 @@ class UnicodeJsonDumper:
                     to_write[k] = ''.join([a for a in v]).encode('utf-8', 'ignore')
         self.output.write(json.dumps(to_write))
         pass
+
 
 class UnicodeWriter:
     """
@@ -101,6 +103,7 @@ class UnicodeWriter:
         for row in rows:
             self.writerow(row)
 
+
 def find_encoding(value):
     encodings = ["ascii", "utf-8", "latin1", "utf-16le", sys.stdin.encoding]
     for encoding in encodings:
@@ -116,6 +119,7 @@ def find_encoding(value):
         except UnicodeDecodeError:
             pass
     return None, None
+
 
 def decode_output_cmd(output):
     return output.decode(locale.getpreferredencoding())
@@ -378,8 +382,10 @@ def write_to_output(str_to_write, output, logger):
 def get_terminal_decoded_string(string):
     return string.decode(sys.stdout.encoding, "ignore")
 
+
 def get_json_writer(json_file):
     return UnicodeJsonDumper(json_file)
+
 
 def get_csv_writer(csvfile):
     return UnicodeWriter(csvfile, quoting=csv.QUOTE_ALL)
@@ -406,8 +412,10 @@ def write_to_json(header,arr_data,json_writer):
       header[arr_data.index(d)]: d for d in arr_data
     })
 
+
 def write_dict_json(arr_data,json_writer):
     json_writer.dump_json(arr_data)
+
 
 def get_architecture():
     if sys.maxsize > 2 ** 32:
@@ -488,6 +496,7 @@ def record_sha256_logs(fr, fw):
 def process_hashes(path):
     content = open(path, "rb").read()
     return hashlib.md5(content).hexdigest(), hashlib.sha1(content).hexdigest(), hashlib.sha256(content).hexdigest()
+
 
 def process_md5(path):
     with open(path, "rb") as f:

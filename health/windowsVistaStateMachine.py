@@ -53,7 +53,7 @@ class WindowsVistaStateMachine(_Statemachine):
         super(WindowsVistaStateMachine, self)._csv_list_running_process(self._list_running())
 
     def csv_hash_running_proccess(self):
-        super(Windows10StateMachine, self)._csv_hash_running_process(self._list_running())
+        super(WindowsVistaStateMachine, self)._csv_hash_running_process(self._list_running())
 
     def csv_list_sessions(self):
         super(WindowsVistaStateMachine, self)._csv_list_sessions(self._list_sessions())
@@ -73,7 +73,6 @@ class WindowsVistaStateMachine(_Statemachine):
     def csv_list_kb(self):
         super(WindowsVistaStateMachine, self)._csv_list_kb(self._list_kb())
 
-
     def json_list_drives(self):
         super(WindowsVistaStateMachine, self)._json_list_drives(self._list_drives())
 
@@ -87,7 +86,7 @@ class WindowsVistaStateMachine(_Statemachine):
         super(WindowsVistaStateMachine, self)._json_list_running_process(self._list_running())
 
     def json_hash_running_proccess(self):
-        super(Windows10StateMachine, self)._json_hash_running_process(self._list_running())
+        super(WindowsVistaStateMachine, self)._json_hash_running_process(self._list_running())
 
     def json_list_sessions(self):
         super(WindowsVistaStateMachine, self)._json_list_sessions(self._list_sessions())

@@ -82,7 +82,6 @@ class Windows10StateMachine(_Statemachine):
     def csv_list_kb(self):
         super(Windows10StateMachine, self)._csv_list_kb(self._list_kb())
 
-
     def json_list_drives(self):
         super(Windows10StateMachine, self)._json_list_drives(self._list_drives())
 
