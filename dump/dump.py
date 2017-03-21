@@ -29,8 +29,6 @@ class _Dump(object):
         self.mft_export = yaml.load(params['mft_export'])
         self.rand_ext = params['rand_ext']
         self.userprofile = params['USERPROFILE']
-        if 'rekall' in params:
-            self.plugins = params['rekall']
         self.params = params
 
     def __extract_mft(self):

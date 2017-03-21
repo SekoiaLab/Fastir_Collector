@@ -7,7 +7,7 @@ if sys.maxsize > 2 ** 32:
              ("./../_x64/boost_python-vc120-mt-gd-1_55.lib", ''),
              ("./../_x64/msvcp120d.dll", ''),
              ("./../_x64/msvcr120d.dll", ''),
-             ("./../memory/dnscache_x64.pyd"),
+             ("./../memory/dnscache_x64.pyd", ''),
     ]
 
 else:

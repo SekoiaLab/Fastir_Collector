@@ -7,12 +7,11 @@ OS = "Windows"
 FASTIR_ROOT = os.path.normpath(os.path.join(os.path.abspath(os.path.dirname(__file__)), "."))
 
 EXTRACT_DUMP = {
-    "mft": ["csv_mft","json_mft"],
-    "dd": ["csv_export_dd","json_export_dd"],
-    "ram": ["csv_export_ram","json_export_ram"],
-    "rekall": ["csv_rekall_cmd","json_rekall_cmd"],
+    "mft": ["csv_mft", "json_mft"],
+    "dd": ["csv_export_dd", "json_export_dd"],
+    "ram": ["csv_export_ram", "json_export_ram"],
     "mbr": ["csv_mbr", "json_mbr"],
-    "registry": ["csv_registry","json_registry"]
+    "registry": ["csv_registry", "json_registry"]
 }
 
 FILTERS_MAGIC = {"application/msword",

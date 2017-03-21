@@ -1,6 +1,7 @@
 import platform
 import pkgutil
 import os
+import os.path
 import sys
 
 operating_sys = platform.system()
@@ -35,7 +36,10 @@ pyz = PYZ(a.pure)
 for pkg in additional_data:
 	a.datas += Tree(pkg, prefix = pkg)
 
-a.datas += [('FastIR.conf', 'FastIR.conf', 'DATA')]
+if os.path.isfile('FastIR.conf'):
+    a.datas += [('FastIR.conf', 'FastIR.conf', 'DATA')]
+else:
+    a.datas += [('FastIR.conf', 'FastIR.conf.sample', 'DATA')]
 
 exe = EXE(pyz, a.scripts, a.binaries, a.zipfiles, a.datas,
 		  name = binary_name, debug = False, strip = None,
