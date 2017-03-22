@@ -7,7 +7,7 @@ import traceback
 
 import psutil
 from settings import NETWORK_ADAPTATER
-from utils.utils import write_to_output,get_csv_writer, write_to_json,get_json_writer,write_to_csv, get_terminal_decoded_string, \
+from utils.utils import write_to_output,get_csv_writer, write_to_json,get_json_writer, write_list_to_json,write_to_csv, get_terminal_decoded_string, \
     record_sha256_logs, process_md5, process_sha1
 import win32process
 import wmi
@@ -144,7 +144,7 @@ class _Statemachine(object):
 
     def _csv_list_running_process(self, list_running):
         self.logger.info("Health : Listing running processes")
-        with open(self.output_dir + 's%_processes' % self.computer_name + self.rand_ext, 'ab') as fw:
+        with open(self.output_dir + '%s_processes' % self.computer_name + self.rand_ext, 'ab') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "COMMAND", "EXEC_PATH"], csv_writer)
             for p in list_running:
@@ -155,7 +155,8 @@ class _Statemachine(object):
                 write_to_csv(
                     [self.computer_name, 'processes', unicode(pid), name, unicode(cmd), unicode(exe_path)],
                     csv_writer)
-        record_sha256_logs(self.output_dir + '_processes' + self.rand_ext, self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_processes' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_list_running_process(self, list_running):
         self.logger.info("Health : Listing running processes")
@@ -163,7 +164,10 @@ class _Statemachine(object):
             with open(os.path.join(self.output_dir + '%s_list_running.json' % self.computer_name), 'ab') as fw:
                 json_writer = get_json_writer(fw)
 
-                headers = ["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "COMMAND", "EXEC_PATH"]
+                to_write = ["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "COMMAND", "EXEC_PATH"]
+                to_write += [[self.computer_name, 'processes', unicode(p[0]), p[1], unicode([2]), unicode(p[3])] for p in list_running]
+                write_list_to_json(to_write, json_writer)
+                """
                 for p in list_running:
                     pid = p[0]
                     name = p[1]
@@ -173,6 +177,8 @@ class _Statemachine(object):
                     write_to_json(headers,
                                   [self.computer_name, 'processes', unicode(pid), name, unicode(cmd), unicode(exe_path)],
                                   json_writer)
+                """
+
 
     def _csv_hash_running_process(self, list_running):
         self.logger.info("Health : Hashing running processes")
@@ -193,7 +199,8 @@ class _Statemachine(object):
                     write_to_csv(
                         [self.computer_name, 'processes', unicode(pid), name, unicode(exe_path), md5, sha1, ctime, mtime, atime],
                         csv_writer)
-        record_sha256_logs(self.output_dir + '_hash_processes' + self.rand_ext, self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_hash_processes' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_hash_running_process(self, list_running):
         self.logger.info("Health : Hashing running processes")
@@ -226,7 +233,8 @@ class _Statemachine(object):
             write_to_csv(["COMPUTER_NAME", "TYPE", "SHARE_NAME", "SHARE_PATH"], csv_writer)
             for name, path in share:
                 write_to_csv([self.computer_name, 'shares', name, path], csv_writer)
-        record_sha256_logs(self.output_dir + '_shares' + self.rand_ext, self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_shares' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_list_share(self, share):
         self.logger.info("Health : Listing shares")
@@ -247,7 +255,8 @@ class _Statemachine(object):
             write_to_csv(["COMPUTER_NAME", "TYPE", "FAB", "PARTITIONS", "DISK", "FILESYSTEM"], csv_writer)
             for phCapt, partCapt, logicalCapt, fs in drives:
                 write_to_csv([self.computer_name, 'list_drives', phCapt, partCapt, logicalCapt, fs], csv_writer)
-        record_sha256_logs(self.output_dir + '_list_drives' + self.rand_ext, self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_list_drives' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_list_drives(self, drives):
         self.logger.info("Health : Listing drives")
@@ -268,7 +277,8 @@ class _Statemachine(object):
             write_to_csv(["COMPUTER_NAME", "TYPE", "DISK", "FILESYSTEM", "PARTITION_NAME"], csv_writer)
             for diskCapt, diskFs, diskPName in drives:
                 write_to_csv([self.computer_name, 'list_networks_drives', diskCapt, diskFs, diskPName], csv_writer)
-        record_sha256_logs(self.output_dir + '_list_networks_drives' + self.rand_ext, self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_list_networks_drives' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_list_network_drives(self, drives):
         self.logger.info("Health : Listing network drives")
@@ -290,7 +300,8 @@ class _Statemachine(object):
             for logonID, authenticationPackage, startime, logontype in sessions:
                 write_to_csv([self.computer_name, 'sessions', unicode(logonID),
                               authenticationPackage, unicode(startime.split('.')[0]), unicode(logontype)], csv_writer)
-        record_sha256_logs(self.output_dir + '_sessions' + self.rand_ext, self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_sessions' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_list_sessions(self, sessions):
         self.logger.info('Health : Listing sessions')
@@ -338,7 +349,8 @@ class _Statemachine(object):
                     arr_write = [self.computer_name, 'scheduled_jobs'] + l.split(',')
                     write_to_csv(arr_write, csv_writer)
         self.logger.info('Health : Listing scheduled jobs')
-        record_sha256_logs(self.output_dir + '_scheduled_jobs' + self.rand_ext, self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_scheduled_jobs' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_list_scheduled_jobs(self):
         self.logger.info('Health : Listing scheduled jobs')
@@ -411,7 +423,8 @@ class _Statemachine(object):
                                   database_path, nbtstat_value], csv_writer)
                 except IOError:
                     self.logger.error(traceback.format_exc())
-        record_sha256_logs(self.output_dir + '_networks_cards' + self.rand_ext, self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_networks_cards' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_list_network_adapters(self, ncs):
 
@@ -475,7 +488,8 @@ class _Statemachine(object):
                 if entry_to_write.find('\.') != 1 and len(entry_to_write) > 0:
                     arr_to_write = [self.computer_name, 'arp_table'] + tokens
                     write_to_csv(arr_to_write, csv_writer)
-        record_sha256_logs(self.output_dir + '_arp_table' + self.rand_ext, self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_arp_table' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_list_arp_table(self, arp):
         self.logger.info('Health : Listing routes tables')
@@ -502,7 +516,8 @@ class _Statemachine(object):
             for ip, mask in routes:
                 write_to_csv([self.computer_name, 'routes_tables', unicode(ip), unicode(mask)], csv_writer)
 
-        record_sha256_logs(self.output_dir + '_routes_tables' + self.rand_ext, self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_routes_tables' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_list_route_table(self, routes):
         self.logger.info('Health : Listing routes tables')
@@ -525,12 +540,11 @@ class _Statemachine(object):
                 write_to_csv([self.computer_name, 'sockets', unicode(pid),
                               unicode(name), unicode(local_address), unicode(source_port),
                               unicode(remote_addr), unicode(remote_port), unicode(status)], csv_writer)
-        record_sha256_logs(self.output_dir + '_sockets' + self.rand_ext, self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_sockets' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_list_sockets_network(self, connections):
-
         self.logger.info('Health : Listing sockets networks')
-
         if self.destination == 'local':
             with open(os.path.join(self.output_dir + '%s_sockets.json' % self.computer_name), 'ab') as fw:
                 json_writer = get_json_writer(fw)
@@ -552,7 +566,8 @@ class _Statemachine(object):
                 write_to_csv([self.computer_name, 'services', caption,
                               unicode(processId), serviceType, pathName,
                               unicode(status), state, startMode], csv_writer)
-        record_sha256_logs(self.output_dir + '_services' + self.rand_ext, self.output_dir + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_services' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_list_services(self, services):
         self.logger.info('Health : Listing services')
