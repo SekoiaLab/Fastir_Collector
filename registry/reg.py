@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 import codecs
-from utils.utils import convert_windate, dosdate, get_csv_writer, get_json_writer, write_list_to_json, write_dict_json, \
+from utils.utils import convert_windate, dosdate, get_csv_writer, get_json_writer, write_list_to_json, write_dict_json,\
     write_list_to_csv, process_hashes
 import registry_obj
 from win32com.shell import shell
@@ -512,16 +512,16 @@ class _Reg(object):
         return result
 
     def _json_networks_list(self, key):
-
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_network_list.json' % self.computer_name), 'ab') as output:
+            with open(os.path.join(self.output_dir, '%s_network_list%s' % (self.computer_name, self.rand_ext)),
+                      'wb') as output:
                 json_writer = get_json_writer(output)
                 result = self._get_network_list(key)
                 for v in result.values():
                     write_dict_json(v, json_writer)
 
     def _csv_networks_list(self, key):
-        with open(os.path.join(self.output_dir, '%s_network_list_%s' % (self.computer_name, self.rand_ext)),
+        with open(os.path.join(self.output_dir, '%s_network_list%s' % (self.computer_name, self.rand_ext)),
                   'wb') as output:
             csv_writer = get_csv_writer(output)
             network_list_result = self._get_network_list(key)
@@ -530,14 +530,13 @@ class _Reg(object):
             write_list_to_csv(arr_data, csv_writer)
 
     def _csv_user_assist(self, count_offset, is_win7_or_further):
-
         with open(self.output_dir + "\\" + self.computer_name + "_user_assist" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_user_assist(count_offset, is_win7_or_further), csv_writer)
 
     def _json_user_assist(self, count_offset, is_win7_or_further):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_user_asist.json' % self.computer_name), 'wb') as output:
+            with open(self.output_dir + "\\" + self.computer_name + "_user_assist" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_user_assist(count_offset, is_win7_or_further), json_writer)
 
@@ -588,14 +587,13 @@ class _Reg(object):
         return to_csv_list
 
     def _csv_open_save_mru(self, str_opensave_mru):
-
         with open(self.output_dir + "\\" + self.computer_name + "_opensaveMRU" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_open_save_mru(str_opensave_mru), csv_writer)
 
     def _json_open_save_mru(self, str_opensave_mru):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_opensaveMRU.json' % self.computer_name), 'wb') as output:
+            with open(self.output_dir + "\\" + self.computer_name + "_opensaveMRU" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_open_save_mru(str_opensave_mru), json_writer)
 
@@ -622,14 +620,13 @@ class _Reg(object):
         return to_csv_list
 
     def _csv_PowerPoint_mru(self, str_powerpoint_mru):
-
         with open(self.output_dir + "\\" + self.computer_name + "_powerpointMRU" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_powerpoint_mru(str_powerpoint_mru), csv_writer)
 
     def _json_powerpoint_mru(self, str_powerpoint_mru):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_powerpointMRU.json' % self.computer_name), 'wb') as output:
+            with open(self.output_dir + "\\" + self.computer_name + "_powerpointMRU" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_powerpoint_mru(str_powerpoint_mru), json_writer)
 
@@ -643,14 +640,14 @@ class _Reg(object):
 
     def csv_registry_services(self):
         """Extracts services"""
-
         with open(self.output_dir + "\\" + self.computer_name + "_registry_services" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_registry_services(), csv_writer)
 
     def json_registry_services(self):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_registry_services.json' % self.computer_name), 'wb') as output:
+            with open(self.output_dir + "\\" + self.computer_name + "_registry_services" + self.rand_ext,
+                      "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_registry_services(), json_writer)
 
@@ -684,7 +681,7 @@ class _Reg(object):
 
     def json_recent_docs(self):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_recent_docs.json' % self.computer_name), 'wb') as output:
+            with open(self.output_dir + "\\" + self.computer_name + "_recent_docs" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_recents_docs(), json_writer)
 
@@ -698,14 +695,14 @@ class _Reg(object):
         return to_csv_list
 
     def csv_installer_folder(self):
-
         with open(self.output_dir + "\\" + self.computer_name + "_installer_folder" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_install_folder(), csv_writer)
 
     def json_installer_folder(self):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_installer_folder.json' % self.computer_name), 'wb') as output:
+            with open(self.output_dir + "\\" + self.computer_name + "_installer_folder" + self.rand_ext,
+                      "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_install_folder(), json_writer)
 
@@ -760,14 +757,13 @@ class _Reg(object):
         return to_csv_list
 
     def csv_shell_bags(self):
-
         with open(self.output_dir + "\\" + self.computer_name + "_shellbags" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_shell_bags(), csv_writer)
 
     def json_shell_bags(self):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_shellbag.json' % self.computer_name), "wb") as output:
+            with open(self.output_dir + "\\" + self.computer_name + "_shellbags" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_shell_bags(), json_writer)
 
@@ -818,14 +814,13 @@ class _Reg(object):
         return to_csv_list
 
     def csv_startup_programs(self):
-
         with open(self.output_dir + "\\" + self.computer_name + "_startup" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_startup_programs(), csv_writer)
 
     def json_startup_programs(self):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_startup.json' % self.computer_name), 'wb') as output:
+            with open(self.output_dir + "\\" + self.computer_name + "_startup" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_startup_programs(), json_writer)
 
@@ -843,7 +838,6 @@ class _Reg(object):
         return to_csv_list
 
     def csv_installed_components(self):
-
         with open(self.output_dir + "\\" + self.computer_name + "_installed_components" + self.rand_ext,
                   "wb") as output:
             csv_writer = get_csv_writer(output)
@@ -851,16 +845,16 @@ class _Reg(object):
 
     def json_installed_components(self):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_installed_components.json' % self.computer_name),
+            with open(self.output_dir + "\\" + self.computer_name + "_installed_components" + self.rand_ext,
                       'wb') as ouput:
                 json_writer = get_json_writer(ouput)
                 write_list_to_json(self.__get_installed_components(), json_writer)
 
     def __get_winlogon_values(self):
         """
-            Extracts winlogon values, in particular UserInit, where the specified executable will be executed at
-            system startup
-            """
+        Extracts winlogon values, in particular UserInit, where the specified executable will be executed at
+        system startup
+        """
         self.logger.info("Extracting winlogon values")
         path = r"Software\Microsoft\Windows NT\CurrentVersion\Winlogon"
         to_csv_list = [("COMPUTER_NAME", "TYPE", "LAST_WRITE_TIME", "HIVE", "KEY_PATH", "ATTR_NAME", "REG_TYPE",
@@ -870,14 +864,13 @@ class _Reg(object):
         return to_csv_list
 
     def csv_winlogon_values(self):
-
         with open(self.output_dir + "\\" + self.computer_name + "_winlogon_values" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_winlogon_values(), csv_writer)
 
     def json_winlogon_values(self):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_winlogon_values.json' % self.computer_name), 'wb') as output:
+            with open(self.output_dir + "\\" + self.computer_name + "_winlogon_values" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_winlogon_values(), json_writer)
 
@@ -897,14 +890,13 @@ class _Reg(object):
         return to_csv_list
 
     def csv_windows_values(self):
-
         with open(self.output_dir + "\\" + self.computer_name + "_windows_values" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_windows_values(), csv_writer)
 
     def json_windows_value(self):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_windows_value.json' % self.computer_name), 'wb') as output:
+            with open(self.output_dir + "\\" + self.computer_name + "_windows_values" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_windows_values(), json_writer)
 
@@ -935,7 +927,7 @@ class _Reg(object):
 
     def json_usb_history(self):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_USBHistory.json' % self.computer_name), "wb") as output:
+            with open(self.output_dir + "\\" + self.computer_name + "_USBHistory" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_usb_history(), json_writer)
 
@@ -949,14 +941,13 @@ class _Reg(object):
         return to_csv_list
 
     def csv_run_mru_start(self):
-
         with open(self.output_dir + "\\" + self.computer_name + "_run_MRU_start" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_run_mru_start(), csv_writer)
 
     def json_run_mru_start(self):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_run_mru_start.json' % self.computer_name), 'wb') as output:
+            with open(self.output_dir + "\\" + self.computer_name + "_run_MRU_start" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_run_mru_start(), json_writer)
 
@@ -987,7 +978,6 @@ class _Reg(object):
             return to_csv_list
 
     def csv_custom_registry_keys(self):
-
         with open(self.output_dir + "\\" + self.computer_name + "_custom_registry_keys" + self.rand_ext,
                   "wb") as output:
             csv_writer = get_csv_writer(output)
@@ -997,7 +987,8 @@ class _Reg(object):
 
     def json_custom_registry_keys(self):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_custom_registry.json' % self.computer_name), 'wb') as output:
+            with open(self.output_dir + "\\" + self.computer_name + "_custom_registry_keys" + self.rand_ext,
+                      "wb") as output:
                 to_json_list = self.__get_custom_registry_keys()
                 if to_json_list:
                     json_writer = get_json_writer(output)

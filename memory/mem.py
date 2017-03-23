@@ -201,8 +201,7 @@ class _Memory(object):
 
     def _json_all_modules_dll(self):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_processes.json' % self.computer_name),
-                      'wb') as output:
+            with open(self.output_dir + '\\' + self.computer_name + '_processes_dll' + self.rand_ext, 'wb') as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_all_modules_dll(), json_writer)
 
@@ -248,27 +247,24 @@ class _Memory(object):
         return list_to_csv
 
     def _csv_all_modules_opened_files(self):
-
         with open(self.output_dir + '\\' + self.computer_name + '_processes_opened_files' + self.rand_ext,
                   'wb') as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_all_modules_opened_files(), csv_writer)
-
 
         record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_processes_opened_files' + self.rand_ext,
                            self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
     def _json_all_modules_opened_files(self):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir,'%s_processes_opened_files.json' % self.computer_name),'wb') as output:
+            with open(self.output_dir + '\\' + self.computer_name + '_processes_opened_files' + self.rand_ext,
+                      'wb') as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_all_modules_opened_files(), json_writer)
 
     def __get_clipboard(self):
         self.logger.info('Getting clipboard contents')
-
         list_to_csv = [("COMPUTER_NAME", "TYPE", "DATA")]
-
         r = None
         try:
             r = Tk()  # Using Tk instead because it supports exotic characters
@@ -306,7 +302,7 @@ class _Memory(object):
 
     def json_clipboard(self):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_clipboard.json' % self.computer_name), 'wb') as output:
+            with open(self.output_dir + '\\' + self.computer_name + '_clipboard' + self.rand_ext, 'wb') as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_clipboard(), json_writer)
 

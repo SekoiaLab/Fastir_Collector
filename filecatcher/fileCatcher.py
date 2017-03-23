@@ -3,14 +3,13 @@ import os
 
 from filecatcher.listfiles import _ListFiles
 from settings import VIRUS_TOTAL
-from utils.utils import get_csv_writer, get_json_writer, write_to_csv, write_to_json, process_size, record_sha256_logs,\
-    process_hashes
+from utils.utils import get_csv_writer, get_json_writer, write_to_csv, write_to_json, close_json_writer, process_size,\
+     record_sha256_logs, process_hashes
 from utils.utils_rawstring import sekoiamagic
 import yaml
 from filecatcher.modules.PE import _PE
 from filecatcher.modules.intel import _Intel
 from archives import _Archives
-
 
 
 class _FileCatcher(object):
@@ -125,6 +124,7 @@ class _FileCatcher(object):
         except Exception as e:
             self.logger.error(e)
             return True
+
     def _filtered_magic(self, f):
         try:
             mime = sekoiamagic(f)
@@ -186,7 +186,9 @@ class _FileCatcher(object):
     def _csv_infos_fs(self, files):
         with open(self.output_dir + '\\' + self.computer_name + '_Filecatcher' + self.rand_ext, 'wb') as fw:
             csv_writer = get_csv_writer(fw)
-            for f, mime, md5,sha1,sha256, zip_value, datem, empty in files:
+            write_to_csv(['COMPUTER NAME', 'TYPE', 'DATE', 'PATH', 'MD5', 'SHA1', 'SHA256', 'MIMETYPE', 'ZIP',
+                           'EMPTY', 'VT'], csv_writer)
+            for f, mime, md5, sha1, sha256, zip_value, datem, empty in files:
                 write_to_csv([self.computer_name, 'Filecatcher', unicode(datem),
                               unicode(f), unicode(md5), unicode(sha1), unicode(sha256), unicode(mime),
                               unicode(zip_value), unicode(empty), self._get_url_VT(sha256)], csv_writer)
@@ -198,13 +200,16 @@ class _FileCatcher(object):
 
     def _json_infos_fs(self, files):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_Filecatcher.json' % self.computer_name),'wb') as fw:
+            with open(self.output_dir + '\\' + self.computer_name + '_Filecatcher' + self.rand_ext, 'wb') as fw:
                 json_writer = get_json_writer(fw)
-                header =['COMPUTER NAME','TYPE', 'DATE','PATH','MD5','SHA1','SHA256','MIMETYPE','ZIP',
-                         'EMPTY','VT']
+                headers = ['COMPUTER NAME', 'TYPE', 'DATE', 'PATH', 'MD5', 'SHA1', 'SHA256', 'MIMETYPE', 'ZIP',
+                             'EMPTY', 'VT']
                 for f, mime, md5, sha1, sha256, zip_value, datem, empty in files:
-                    write_to_json(header,[self.computer_name, 'Filecatcher', unicode(datem),
-                                  unicode(f), unicode(md5), unicode(sha1), unicode(sha256), unicode(mime),
-                                  unicode(zip_value), unicode(empty), self._get_url_VT(sha256)], json_writer)
+                    write_to_json(headers, [self.computer_name, 'Filecatcher', unicode(datem), unicode(f), unicode(md5),
+                                  unicode(sha1), unicode(sha256), unicode(mime), unicode(zip_value), unicode(empty),
+                                  self._get_url_VT(sha256)], json_writer)
+                close_json_writer(json_writer)
+        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_Filecatcher' + self.rand_ext,
+                           self.output_dir + '\\' + self.computer_name + '_sha256.log')
         if self.zip_file:
             self.zip_file.close()

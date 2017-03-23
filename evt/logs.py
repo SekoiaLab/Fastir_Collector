@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import win32evtlog
-from utils.utils import get_csv_writer,get_json_writer, write_to_csv, write_to_json
+from utils.utils import get_csv_writer, get_json_writer, write_to_csv, write_to_json, close_json_writer
 import datetime
 import os
 
@@ -63,6 +63,7 @@ class _EventLogs(object):
         server = None  # name of the target computer to get event logs, None to get logs from current computer
         with open(self.output_dir + '\\' + self.computer_name + '_evts' + self.rand_ext, 'wb') as fw:
             csv_writer = get_csv_writer(fw)
+            write_to_csv(['COMPUTER', 'TYPE', 'SOURCE', 'CATEGORY', 'SOURCE NAME', 'ID', 'EVENT_TYPE', 'LOG'], csv_writer)
             if is_win_xp:
                 for eventCategory, sourceName, eventID, eventType, date, log in self._list_evt_xp(server, 'Security'):
                     write_to_csv([self.computer_name, 'Logs', 'Security', eventCategory, sourceName, eventID, eventType,
@@ -91,23 +92,21 @@ class _EventLogs(object):
         """Prints the event logs in a csv, the called method is different for WinXP and lower"""
         server = None  # name of the target computer to get event logs, None to get logs from current computer
         if self.destination == 'local':
-
-            with open(os.path.join(self.output_dir, '%s_evts' % self.computer_name), 'wb') as fw:
-
+            with open(self.output_dir + '\\' + self.computer_name + '_evts' + self.rand_ext, 'wb') as fw:
                 json_writer = get_json_writer(fw)
-                header = ['COMPUTER','TYPE','SOURCE','CATEGORY', 'SOURCE NAME','ID','EVENT_TYPE','LOG']
+                header = ['COMPUTER', 'TYPE', 'SOURCE', 'CATEGORY', 'SOURCE NAME', 'ID', 'EVENT_TYPE', 'LOG']
                 if is_win_xp:
                     for eventCategory, sourceName, eventID, eventType, date, log in self._list_evt_xp(server, 'Security'):
-                        write_to_json(header, [self.computer_name, 'Logs', 'Security', eventCategory, sourceName, eventID, eventType,
-                                      date] + log, json_writer)
+                        write_to_json(header, [self.computer_name, 'Logs', 'Security', eventCategory, sourceName,
+                                               eventID, eventType, date] + log, json_writer)
                     for eventCategory, sourceName, eventID, eventType, date, log in self._list_evt_xp(server,
                                                                                                       'Application'):
                         write_to_json(header,
-                            [self.computer_name, 'Logs', 'Application', eventCategory, sourceName, eventID, eventType,
-                             date, log], json_writer)
+                                      [self.computer_name, 'Logs', 'Application', eventCategory, sourceName, eventID,
+                                       eventType, date, log], json_writer)
                     for eventCategory, sourceName, eventID, eventType, date, log in self._list_evt_xp(server, 'System'):
-                        write_to_json(header,[self.computer_name, 'Logs', 'System', eventCategory, sourceName, eventID, eventType,
-                                      date,log], json_writer)
+                        write_to_json(header, [self.computer_name, 'Logs', 'System', eventCategory, sourceName, eventID,
+                                               eventType, date, log], json_writer)
                 else:
                     # Exports everything from the event viewer
                     evt_handle = win32evtlog.EvtOpenChannelEnum()
@@ -119,3 +118,4 @@ class _EventLogs(object):
                             break
                             # fw.write('"Computer Name"|"Type"|"Date"|"logtype"|"log data"\n')
                         self._list_evt_vista(server, logtype)
+                close_json_writer(json_writer)

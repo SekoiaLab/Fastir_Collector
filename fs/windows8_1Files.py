@@ -36,7 +36,7 @@ class Windows8_1Files(_FS):
 
     def csv_ie_history(self):
         super(Windows8_1Files, self)._ie_history(['AppData\Local\Microsoft\Windows\*\History.IE5',
-                                                'AppData\Local\Microsoft\Windows\*\Low\History.IE5'])
+                                                  'AppData\Local\Microsoft\Windows\*\Low\History.IE5'])
 
     def csv_firefox_downloads(self):
         # TODO: make sure it works

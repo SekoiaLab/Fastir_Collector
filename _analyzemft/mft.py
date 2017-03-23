@@ -187,7 +187,7 @@ def mft_to_csv(record, ret_header):
     tmpBuffer = ''
     filenameBuffer = ''
 
-    if ret_header == True:
+    if ret_header:
         # Write headers
         csv_string = ['Record Number', 'Good', 'Active', 'Record type',
                       # '$Logfile Seq. Num.',

@@ -29,34 +29,47 @@ regex_patern_path = '^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))'
 
 
 class UnicodeJsonDumper:
+    """
+    This class always write JSON as an array of object.
+    A close() call at the end of the function is mandatory, otherwise generated
+    JSON is note valid.
+    """
     def __init__(self, output):
         self.output = output
+        self.first = True
 
     def list_to_json(self, list_json):
+        """
+        Alternative method which bypasses inner state to directly write a collection in file.
+        Should only be used for small datasets, as it is fully stored in memory.
+        :param list_json: An array of elements where the first one is the name of the fields.
+        """
         headers = list_json[0]
-        
-
+        to_write = []
         for entry in list_json[1:]:
-            self.dump_json(
-                {h: entry[headers.index(h)] for h in headers}
-            )
-        pass
+            json_dict = {h:  entry[index] for index, h in enumerate(headers)}
+            to_write.append(encode_json_dict(json_dict))
+        json.dump(to_write, self.output)
 
     def dump_json(self, entry):
-        encodings = encodings = ["ascii", "utf-8", "latin1", "utf-16le", sys.stdin.encoding]
-        to_write = {}
-        for k, v in entry.items():
-            if v:
-                encoding, value = find_encoding(v)
-                if encoding:
-                    try:
-                        to_write[k] = value.decode(encoding).encode('utf-8', 'ignore')
-                    except UnicodeEncodeError:
-                        to_write[k] = binascii.b2a_hex(v).encode('UTF-8','ignore')
-                else:
-                    to_write[k] = ''.join([a for a in v]).encode('utf-8', 'ignore')
-        self.output.write(json.dumps(to_write))
-        pass
+        # encodings = encodings = ["ascii", "utf-8", "latin1", "utf-16le", sys.stdin.encoding]
+        to_write = encode_json_dict(entry)
+        if self.first:
+            self.output.write('[')
+        else:
+            self.output.write(',')
+        json.dump(to_write, self.output)
+        self.first = False
+
+    def close_current(self):
+        """
+        Close the array of JSON objects.
+        As the file stream is managed outside of this object, don't close the
+        output and reinitialise the inner state.
+        """
+        if not self.first:
+            self.output.write(']')
+            self.first = True
 
 
 class UnicodeWriter:
@@ -110,7 +123,7 @@ def find_encoding(value):
         try:
             if type(value) != "str" and type(value) != "unicode":
                 value = str(value).decode(encoding)
-            elif type(s) == "str":
+            elif type(value) == "str":
                 value = value.decode(encoding)
             return encoding, value
 
@@ -119,6 +132,22 @@ def find_encoding(value):
         except UnicodeDecodeError:
             pass
     return None, None
+
+
+def encode_json_dict(jdict):
+    """Encode all values in a dict to allow json serialization"""
+    to_write = {}
+    for k, v in jdict.items():
+        if v:
+            encoding, value = find_encoding(v)
+            if encoding:
+                try:
+                    to_write[k] = value.decode(encoding).encode('utf-8', 'ignore')
+                except UnicodeEncodeError:
+                    to_write[k] = binascii.b2a_hex(v).encode('UTF-8', 'ignore')
+            else:
+                to_write[k] = ''.join([a for a in v]).encode('utf-8', 'ignore')
+    return to_write
 
 
 def decode_output_cmd(output):
@@ -406,15 +435,24 @@ def write_list_to_json(arr_data, json_writer):
     json_writer.list_to_json(arr_data)
 
 
-def write_to_json(header,arr_data,json_writer):
+def write_to_json(header, arr_data, json_writer):
     """Write data in json files using UTF-8"""
-    json_writer.dump_json({
-      header[arr_data.index(d)]: d for d in arr_data
-    })
+    try:
+        json_writer.dump_json({
+            h: arr_data[index] for index, h in enumerate(header)
+        })
+    except IndexError:
+        json_writer.dump_json({
+            header[index]: d for index, d in enumerate(arr_data)
+        })
 
 
-def write_dict_json(arr_data,json_writer):
+def write_dict_json(arr_data, json_writer):
     json_writer.dump_json(arr_data)
+
+
+def close_json_writer(json_writer):
+    json_writer.close_current()
 
 
 def get_architecture():

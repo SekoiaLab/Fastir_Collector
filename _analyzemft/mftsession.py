@@ -13,7 +13,7 @@ import csv
 import os
 from optparse import OptionParser
 import mft
-from utils.utils import get_json_writer, write_to_json
+from utils.utils import get_json_writer, write_to_json, close_json_writer
 SIAttributeSizeXP = 72
 SIAttributeSizeNT = 48
 
@@ -75,20 +75,17 @@ class _MftSession:
 
         while raw_record != "":
             record = mft.parse_record(raw_record, False)
-
             record['filename'] = self.mft[self.num_records]['filename']
-
             self.do_output(record)
-
             self.num_records += 1
-
             if record['ads'] > 0:
                 for i in range(0, record['ads']):
                     record_ads = record.copy()
                     record_ads['filename'] = record['filename'] + ':' + record['data_name', i]
                     self.do_output(record_ads)
-
             raw_record = self.file_mft.read(1024)
+        if self.json:
+            close_json_writer(self.json_writer)
 
     def do_output(self, record):
         if self.output is not None and not self.json:
@@ -108,15 +105,10 @@ class _MftSession:
         raw_record = self.file_mft.read(1024)
 
         while raw_record != "":
-            record = {}
             record = mft.parse_record(raw_record, False)
-
             record['filename'] = self.mft[self.num_records]['filename']
-
             self.fullmft[self.num_records] = record
-
-            self.num_records = self.num_records + 1
-
+            self.num_records += 1
             raw_record = self.file_mft.read(1024)
 
     def build_filepaths(self):

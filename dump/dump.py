@@ -105,20 +105,15 @@ class _Dump(object):
         # export on csv
         for path_current_mft in self.__extract_mft():
             if self.mft_export:
-                session = _MftSession(self.logger,
-                                      path_current_mft,
-                                      path_current_mft.replace('.mft', self.rand_ext)
-                                      )
+                session = _MftSession(self.logger, path_current_mft, path_current_mft.replace('.mft', self.rand_ext))
                 session.open_files()
                 session.process_mft_file()
 
     def json_mft(self):
         for path_current_mft in self.__extract_mft():
             if self.mft_export:
-                session = _MftSession(self.logger,
-                                      path_current_mft,
-                                      path_current_mft.replace('.mft', '.json')
-                                      ,True)
+                session = _MftSession(self.logger, path_current_mft, path_current_mft.replace('.mft', self.rand_ext),
+                                      True)
                 session.open_files()
                 session.process_mft_file()
 
@@ -130,7 +125,7 @@ class _Dump(object):
             with open(self.output_dir + '\\' + self.computer_name + '.dd', 'wb') as fw:
                 with open(d, 'rb') as fr:
                     while already < int(size):
-                        already = already + buff
+                        already += buff
                         r = fr.read(buff)
                         fw.write(r)
 

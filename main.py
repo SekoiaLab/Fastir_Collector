@@ -174,7 +174,7 @@ def profile_used(path, param_options):
         if config.has_option("registry","custom_registry_keys"):
             param_options["custom_registry_keys"] = config.get("registry", "custom_registry_keys")
             param_options["registry_recursive"] = yaml.load(config.get("registry", "registry_recursive"))
-        if config.has_option('registry','get_autoruns'):
+        if config.has_option('registry', 'get_autoruns'):
             param_options["get_autoruns"] = yaml.load(config.get('registry', "get_autoruns"))
         else:
             param_options["get_autoruns"] = False
@@ -191,11 +191,11 @@ def profile_used(path, param_options):
                 param_options["rand_ext"] = "." + "".join(
                     [random.SystemRandom().choice(string.ascii_lowercase) for _ in xrange(5)])
             else:
-                param_options["rand_ext"] = '.csv'
+                param_options["rand_ext"] = "." + param_options["output_type"]
         else:
-            param_options["rand_ext"] = '.csv'
+            param_options["rand_ext"] = "." + param_options["output_type"]
     else:
-        param_options["rand_ext"] = '.csv'
+        param_options["rand_ext"] = "." + param_options["output_type"]
 
     if config.has_section('env'):
         for option in config.options('env'):

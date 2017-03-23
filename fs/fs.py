@@ -10,8 +10,7 @@ import ctypes
 import struct
 
 from utils.utils import look_for_outlook_dirs, look_for_files, zip_archive, get_csv_writer, get_json_writer, \
-    write_to_csv, \
-    write_to_json, record_sha256_logs
+     write_to_csv, write_to_json, close_json_writer, record_sha256_logs
 from registry.registry_obj import get_userprofiles_from_reg
 from utils.utils_rawstring import sekoiamagic
 from win32com.shell import shell, shellcon
@@ -56,8 +55,6 @@ class _FS(object):
         list_str = 'N/A'
         try:
             list_str = content[section_c:section_c + length_c].decode('utf-16-le').split("\x00")
-
-
         except UnicodeDecodeError as e:
             try:
                 list_str = content[section_c:section_c + e.start].decode('utf-16-le').split("\x00")
@@ -238,11 +235,14 @@ class _FS(object):
 
     def _json_list_named_pipes(self, pipes):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_named_pipes.json' % self.computer_name), 'wb') as output:
+            with open(self.output_dir + '\\' + self.computer_name + '_named_pipes' + self.rand_ext, 'wb') as output:
                 json_writer = get_json_writer(output)
                 header = ["COMPUTER_NAME", "TYPE", "NAME"]
                 for pipe in pipes:
                     write_to_json(header, [self.computer_name, 'named_pipes', pipe], json_writer)
+                close_json_writer(json_writer)
+        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_named_pipes' + self.rand_ext,
+                           self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
     def _csv_windows_prefetch(self, wpref):
         with open(self.output_dir + '\\' + self.computer_name + '_prefetch' + self.rand_ext, 'wb') as output:
@@ -265,7 +265,7 @@ class _FS(object):
 
     def _json_windows_prefetch(self, wpref):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_prefetch.json' % self.computer_name), 'wb') as output:
+            with open(self.output_dir + '\\' + self.computer_name + '_prefetch' + self.rand_ext, 'wb') as output:
                 json_writer = get_json_writer(output)
                 header = ["COMPUTER_NAME", "TYPE", "FILE", "VERSION", "SIZE", "EXEC_NAME", "CREATE_TIME",
                           "MODIFICATION_TIME", "RUN_COUNT", "START_TIME", "DURATION", "AVERAGE_DURATION",
@@ -282,23 +282,29 @@ class _FS(object):
                                            unicode(hash_table_a['duration']), unicode(hash_table_a['average_duration']),
                                            str_c],
                                   json_writer)
+                close_json_writer(json_writer)
+            record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_prefetch' + self.rand_ext,
+                               self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
     def _csv_firefox_history(self, fhistory):
         with open(self.output_dir + '\\' + self.computer_name + '_firefox_history' + self.rand_ext, 'wb') as output:
+            header = ["COMPUTER_NAME", "TYPE", "TIME", "URL", "USER", "PROFILE"]
             csv_writer = get_csv_writer(output)
+            write_to_csv(header, csv_writer)
             for time, url, user, profile in fhistory:
                 write_to_csv([self.computer_name, 'firefox_history', time, url, user, profile], csv_writer)
         record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_firefox_history' + self.rand_ext,
                            self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
-    def _json_chrome_history(self, fhistory):
-        if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_firefox_history.json') % self.computer_name, 'wb') as output:
-                json_writer = get_json_writer(output)
-                header = ["COMPUTER_NAME", "TYPE", "TIME", "URL", "TITLE", "USER", "PROFILE"]
-                for time, url, title, user, profile in fhistory:
-                    write_to_json(header, [self.computer_name, 'chrome_history',
-                                           time, url, title, user, profile], json_writer)
+    def _json_firefox_history(self, fhistory):
+        with open(self.output_dir + '\\' + self.computer_name + '_firefox_history' + self.rand_ext, 'wb') as output:
+            header = ["COMPUTER_NAME", "TYPE", "TIME", "URL", "USER", "PROFILE"]
+            json_writer = get_json_writer(output)
+            for time, url, user, profile in fhistory:
+                write_to_json(header, [self.computer_name, 'firefox_history', time, url, user, profile], json_writer)
+            close_json_writer(json_writer)
+        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_firefox_history' + self.rand_ext,
+                           self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
     def _csv_chrome_history(self, chistory):
         with open(self.output_dir + '\\' + self.computer_name + '_chrome_history' + self.rand_ext, 'wb') as output:
@@ -311,12 +317,15 @@ class _FS(object):
 
     def _json_chrome_history(self, chistory):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_chrome_history.json') % self.computer_name, 'wb') as output:
+            with open(self.output_dir + '\\' + self.computer_name + '_chrome_history' + self.rand_ext, 'wb') as output:
                 json_writer = get_json_writer(output)
                 header = ["COMPUTER_NAME", "TYPE", "TIME", "URL", "TITLE", "USER", "PROFILE"]
                 for time, url, title, user, profile in chistory:
                     write_to_json(header, [self.computer_name, 'chrome_history',
                                            time, url, title, user, profile], json_writer)
+                close_json_writer(json_writer)
+        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_chrome_history' + self.rand_ext,
+                           self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
     def csv_recycle_bin(self):
         """Exports the filenames contained in the recycle bin"""
@@ -336,7 +345,7 @@ class _FS(object):
 
     def json_recycle_bin(self):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_recycle_bin.json' % self.computer_name), 'wb') as output:
+            with open(self.output_dir + '\\' + self.computer_name + '_recycle_bin' + self.rand_ext, 'wb') as output:
                 json_writer = get_json_writer(output)
                 header = ["COMPUTER_NAME", "TYPE", "NAME_1", "NAME_2"]
                 idl = shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_BITBUCKET)
@@ -348,7 +357,9 @@ class _FS(object):
                                   [self.computer_name, 'recycle_bin',
                                    files.GetDisplayNameOf(bin_file, shellcon.SHGDN_NORMAL),
                                    files.GetDisplayNameOf(bin_file, shellcon.SHGDN_FORPARSING)], json_writer)
-        pass
+                close_json_writer(json_writer)
+        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_recycle_bin' + self.rand_ext,
+                           self.output_dir + '\\' + self.computer_name + '_sha256.log')
 
     def get_e_mail_attachments(self):
         """Checks OST and PST windows in correct directories and zip it in a given archive"""
