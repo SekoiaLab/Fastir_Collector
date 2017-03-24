@@ -1,0 +1,8 @@
+construct==2.8.10
+distorm3==3.3.4
+hexdump==3.3
+psutil==5.2.0
+pypiwin32==219
+pytz==2016.10
+PyYAML==3.12
+WMI==1.4.9
