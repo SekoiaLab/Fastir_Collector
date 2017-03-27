@@ -57,16 +57,16 @@ WORDSIZE = 2
 DWORDSIZE = 4
 
 USERS_FOLDER = {
-    "Windows10": os.path.join(os.environ['HOMEDRIVE'],'Users'),
-    "Windows8": os.path.join(os.environ['HOMEDRIVE'],'Users'),
-    "Windows8_1": os.path.join(os.environ['HOMEDRIVE'],'Users'),
-    "Windows7": os.path.join(os.environ['HOMEDRIVE'],'Users'),
-    "Windows2012Server": os.path.join(os.environ['HOMEDRIVE'],'Users'),
-    "Windows2012ServerR2": os.path.join(os.environ['HOMEDRIVE'],'Users'),
-    "WindowsXP": os.path.join(os.environ['HOMEDRIVE'], 'Documents and Settings'),
-    "WindowsVista": os.path.join(os.environ['HOMEDRIVE'],'Users'),
-    "Windows2008ServerR2": os.path.join(os.environ['HOMEDRIVE'],'Users'),
-    "Windows2008Server": os.path.join(os.environ['HOMEDRIVE'],'Users'),
-    "Windows2003Server": os.path.join(os.environ['HOMEDRIVE'], 'Documents and Settings'),
-    "Windows2003ServerR2": os.path.join(os.environ['HOMEDRIVE'], 'Documents and Settings')
+    "Windows10": os.path.join(os.getenv('HOMEDRIVE', 'C:'), 'Users'),
+    "Windows8": os.path.join(os.getenv('HOMEDRIVE', 'C:'), 'Users'),
+    "Windows8_1": os.path.join(os.getenv('HOMEDRIVE', 'C:'), 'Users'),
+    "Windows7": os.path.join(os.getenv('HOMEDRIVE', 'C:'), 'Users'),
+    "Windows2012Server": os.path.join(os.getenv('HOMEDRIVE', 'C:'), 'Users'),
+    "Windows2012ServerR2": os.path.join(os.getenv('HOMEDRIVE', 'C:'), 'Users'),
+    "WindowsXP": os.path.join(os.getenv('HOMEDRIVE', 'C:'), 'Documents and Settings'),
+    "WindowsVista": os.path.join(os.getenv('HOMEDRIVE', 'C:'), 'Users'),
+    "Windows2008ServerR2": os.path.join(os.getenv('HOMEDRIVE', 'C:'), 'Users'),
+    "Windows2008Server": os.path.join(os.getenv('HOMEDRIVE', 'C:'), 'Users'),
+    "Windows2003Server": os.path.join(os.getenv('HOMEDRIVE', 'C:'), 'Documents and Settings'),
+    "Windows2003ServerR2": os.path.join(os.getenv('HOMEDRIVE', 'C:'), 'Documents and Settings')
 }
