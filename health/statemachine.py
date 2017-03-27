@@ -6,8 +6,8 @@ import subprocess
 import traceback
 import psutil
 from settings import NETWORK_ADAPTATER
-from utils.utils import write_to_output, get_csv_writer, write_to_json, get_json_writer, write_list_to_json, \
-    write_to_csv, get_terminal_decoded_string, record_sha256_logs, process_md5, process_sha1
+from utils.utils import write_to_output, get_csv_writer, write_to_json, close_json_writer, get_json_writer,\
+     write_list_to_json, write_to_csv, get_terminal_decoded_string, record_sha256_logs, process_md5, process_sha1
 import win32process
 import wmi
 import datetime
@@ -80,7 +80,7 @@ class _Statemachine(object):
                         try:
                             IPv4 = nc.IPAddress[0]
                             IPv6 = nc.IPAddress[1]
-                        except IndexError as e:
+                        except IndexError:
                             self.logger.error('Error to catch IP Address %s ' % str(nc.IPAddress))
                     if IPv4:
                         nbtstat = 'nbtstat -A ' + IPv4
@@ -95,7 +95,7 @@ class _Statemachine(object):
                     if nc.DHCPEnabled:
                         if nc.DHCPServer:
                             DHCP_server = nc.DHCPServer
-            yield netcard, adapter_type, description, mac_address, product_name, physical_adapter, product_name, speed, \
+            yield netcard, adapter_type, description, mac_address, product_name, physical_adapter, product_name, speed,\
                   IPv4, IPv6, DHCP_server, DNS_server, database_path, nbtstat_value
 
     def _list_arp_table(self):
@@ -178,7 +178,7 @@ class _Statemachine(object):
             for p in list_running:
                 pid = p[0]
                 name = p[1]
-                cmd = p[2]
+                # cmd = p[2]
                 exe_path = p[3]
                 if exe_path and os.path.isfile(exe_path):
                     ctime = datetime.datetime.fromtimestamp(os.path.getctime(exe_path))
@@ -202,7 +202,7 @@ class _Statemachine(object):
                 for p in list_running:
                     pid = p[0]
                     name = p[1]
-                    cmd = p[2]
+                    # cmd = p[2]
                     exe_path = p[3]
                     if exe_path and os.path.isfile(exe_path):
                         ctime = datetime.datetime.fromtimestamp(os.path.getctime(exe_path))
@@ -210,8 +210,8 @@ class _Statemachine(object):
                         atime = datetime.datetime.fromtimestamp(os.path.getatime(exe_path))
                         md5 = process_md5(unicode(exe_path))
                         sha1 = process_sha1(unicode(exe_path))
-                        to_write += [[self.computer_name, 'hash processes', unicode(pid), name, unicode(exe_path), md5, sha1,
-                                      ctime, mtime, atime]]
+                        to_write += [[self.computer_name, 'hash processes', unicode(pid), name, unicode(exe_path), md5,
+                                      sha1, ctime, mtime, atime]]
                 write_list_to_json(to_write, json_writer)
                 record_sha256_logs(self.output_dir + self.computer_name + '_hash_processes' + self.rand_ext,
                                    self.output_dir + self.computer_name + '_sha256.log')
@@ -308,45 +308,34 @@ class _Statemachine(object):
 
     def _csv_list_scheduled_jobs(self):
         self.logger.info('Health : Listing scheduled jobs')
-        file_tasks = self.output_dir + '%s_tasks' % self.computer_name + self.rand_ext
+        file_tasks = self.output_dir + '%s_scheduled_jobs' % self.computer_name + self.rand_ext
         with open(file_tasks, 'wb') as tasks_logs:
             proc = subprocess.Popen(["schtasks.exe", '/query', '/fo', 'CSV'], stdout=subprocess.PIPE,
                                     stderr=subprocess.PIPE)
             res = proc.communicate()
             res = get_terminal_decoded_string(res[0])
             # clean and write the command output
-            write_to_output('"TASK_NAME","NEXT_SCHEDULE","STATUS"\r\n', tasks_logs, self.logger)
+            write_to_output('"COMPUTER_NAME","TYPE","TASK_NAME","NEXT_SCHEDULE","STATUS"\r\n', tasks_logs, self.logger)
+            csv_writer = get_csv_writer(tasks_logs)
             column_names = None
             for line in res.split('\r\n'):
                 if line == "":
                     continue
                 if line[0] != '"':
                     continue
-                if not column_names:
+                if column_names is None:
                     column_names = line
                     continue
                 elif column_names == line:
                     continue
-                write_to_output(line+"\r\n", tasks_logs, self.logger)
-
-        self.logger.info('Health : Listing scheduled jobs')
-        with open(file_tasks, "r") as fr, open(self.output_dir + '%s_scheduled_jobs' % self.computer_name + self.rand_ext, 'wb') as fw:
-            csv_writer = get_csv_writer(fw)
-            write_to_csv(["COMPUTER_NAME", "TYPE", "JOB_NAME", "TIME", "STATE"], csv_writer)
-            for l in fr.readlines():
-                l = l.decode('utf8')
-                if l.find('\\') > 0:
-                    l = l[:-1].replace('"', '')  # remove the end of line
-                    arr_write = [self.computer_name, 'scheduled_jobs'] + l.split(',')
-                    write_to_csv(arr_write, csv_writer)
-        self.logger.info('Health : Listing scheduled jobs')
+                write_to_csv([self.computer_name, 'scheduled_jobs'] + line.replace('"', '').split(','), csv_writer)
         record_sha256_logs(self.output_dir + self.computer_name + '_scheduled_jobs' + self.rand_ext,
                            self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_list_scheduled_jobs(self):
         self.logger.info('Health : Listing scheduled jobs')
         if self.destination == 'local':
-            file_tasks = self.output_dir + '%s_tasks' % self.computer_name + self.rand_ext
+            file_tasks = self.output_dir + '%s_scheduled_jobs' % self.computer_name + self.rand_ext
             with open(file_tasks, 'wb') as tasks_logs:
                 json_writer = get_json_writer(tasks_logs)
                 proc = subprocess.Popen(["schtasks.exe", '/query', '/fo', 'CSV'], stdout=subprocess.PIPE,
@@ -361,12 +350,14 @@ class _Statemachine(object):
                         continue
                     if line[0] != '"':
                         continue
-                    if not column_names:
+                    if column_names is None:
                         column_names = line
                         continue
                     elif column_names == line:
                         continue
-                    write_to_json(header, [self.computer_name, 'Scheduled Jobs'].extends(line.split(',')), json_writer)
+                    write_to_json(header, [self.computer_name, 'Scheduled Jobs'] + line.replace('"', '').split(','),
+                                  json_writer)
+                close_json_writer(json_writer)
         record_sha256_logs(self.output_dir + self.computer_name + '_scheduled_jobs' + self.rand_ext,
                            self.output_dir + self.computer_name + '_sha256.log')
 

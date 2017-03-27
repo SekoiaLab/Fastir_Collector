@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 from statemachine import _Statemachine
 from settings import NETWORK_ADAPTATER
-import utils
+from utils import utils
 import subprocess
 
 
@@ -28,7 +28,6 @@ class WindowsXPStateMachine(_Statemachine):
         return super(WindowsXPStateMachine, self)._list_scheduled_jobs()
 
     def _list_network_adapters(self):
-        self.logger.info('Health : Listing scheduled jobs')
         net = self.wmi.Win32_NetworkAdapter()
         for n in net:
             netcard = utils.decode_output_cmd(n.Caption)
@@ -70,7 +69,8 @@ class WindowsXPStateMachine(_Statemachine):
                             DNS_server = nc.DNSServerSearchOrder[0]
                             if nc.DHCPEnabled:
                                 DHCP_server = nc.DHCPServer
-            yield netcard, adapter_type, description, mac_address, product_name, physical_adapter, product_name, speed, IPv4, IPv6, DHCP_server, DNS_server, database_path, nbtstat_value
+            yield netcard, adapter_type, description, mac_address, product_name, physical_adapter, product_name, speed,\
+                  IPv4, IPv6, DHCP_server, DNS_server, database_path, nbtstat_value
 
     def _list_kb(self):
         return super(WindowsXPStateMachine, self)._list_kb()
@@ -119,6 +119,12 @@ class WindowsXPStateMachine(_Statemachine):
 
     def csv_list_kb(self):
         super(WindowsXPStateMachine, self)._csv_list_kb(self._list_kb())
+
+    def csv_list_scheduled_jobs(self):
+        super(WindowsXPStateMachine, self)._csv_list_scheduled_jobs()
+
+    def json_list_scheduled_jobs(self):
+        super(WindowsXPStateMachine, self)._json_list_scheduled_jobs()
 
     def json_list_drives(self):
         super(WindowsXPStateMachine, self)._json_list_drives(self._list_drives())

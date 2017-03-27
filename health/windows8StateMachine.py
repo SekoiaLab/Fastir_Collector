@@ -76,6 +76,12 @@ class Windows8StateMachine(_Statemachine):
     def csv_list_kb(self):
         super(Windows8StateMachine, self)._csv_list_kb(self._list_kb())
 
+    def csv_list_scheduled_jobs(self):
+        super(Windows8StateMachine, self)._csv_list_scheduled_jobs()
+
+    def json_list_scheduled_jobs(self):
+        super(Windows8StateMachine, self)._json_list_scheduled_jobs()
+
     def json_list_drives(self):
         super(Windows8StateMachine, self)._json_list_drives(self._list_drives())
 

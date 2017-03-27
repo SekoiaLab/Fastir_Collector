@@ -76,6 +76,12 @@ class WindowsVistaStateMachine(_Statemachine):
     def json_list_drives(self):
         super(WindowsVistaStateMachine, self)._json_list_drives(self._list_drives())
 
+    def csv_list_scheduled_jobs(self):
+        super(WindowsVistaStateMachine, self)._csv_list_scheduled_jobs()
+
+    def json_list_scheduled_jobs(self):
+        super(WindowsVistaStateMachine, self)._json_list_scheduled_jobs()
+
     def json_list_network_drives(self):
         super(WindowsVistaStateMachine, self)._json_list_network_drives(self._list_network_drives())
 
