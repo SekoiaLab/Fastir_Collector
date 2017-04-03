@@ -13,6 +13,17 @@ This tool collects different artefacts on live Windows and records the results i
 - hexdump
 - pytz
 
+Alternatively, a `pip freeze` output is available in `reqs.pip`.
+ 
+## Compiling
+
+To compile FastIR, you will need [pyinstaller](https://github.com/pyinstaller/pyinstaller).
+Simply use ```pyinstaller pyinstaller.spec``` at the project root directory.
+The binary will by default be in `/dist`.
+
+Important: for x64 systems,  check that your local python installation is also
+in x64.
+
 ## Execution
 - ./fastIR_x64.exe -h for help
 - ./fastIR_x64.exe --packages fast  extract all artefacts without dump package artefacts

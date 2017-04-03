@@ -10,8 +10,7 @@ import yaml
 import glob
 from _analyzemft.mftsession import _MftSession
 from disk_analysis import DiskAnalysis
-from environment_settings import Partitions, Disks, OperatingSystem, \
-    EnvironmentVariable
+from environment_settings import Partitions, Disks, OperatingSystem  # , EnvironmentVariable
 from mbr import Mbr
 from vbr import Vbr
 from settings import LONGLONGSIZE, BYTESIZE, WORDSIZE
@@ -81,7 +80,7 @@ class _Dump(object):
                         prevCluster = None
                         prevSeek = 0
                         for length, cluster in decode_data_runs(dataruns):
-                            if prevCluster == None:
+                            if prevCluster is None:
                                 ntfsdrive.seek(cluster * bytesPerSector * sectorsPerCluster)
                                 prevSeek = ntfsdrive.tell()
                                 r_data = ntfsdrive.read(length * bytesPerSector * sectorsPerCluster)
@@ -165,7 +164,7 @@ class _Dump(object):
         partition = Partitions(self.output_dir, self.logger)
         disk = Disks()
         operatingSystem = OperatingSystem()
-        envVar = EnvironmentVariable()
+        # env_var = EnvironmentVariable()
         mbr = Mbr(self.output_dir)
         informations.os = operatingSystem.os_information(informations.currentMachine)
         informations.listDisks = disk.get_disk_information(informations.currentMachine)
@@ -173,8 +172,8 @@ class _Dump(object):
         for d in informations.listDisks:
             informations.mbrDisk = mbr.mbr_parsing(d.deviceID)
             mbr.boot_loader_disassembly()
-            for p in informations.mbrDisk.partitions :
-                if p.state == "ACTIVE" :
+            for p in informations.mbrDisk.partitions:
+                if p.state == "ACTIVE":
                     vbr = Vbr(d.deviceID, p.sector_offset, self.output_dir)
                     self.logger.info('VBR Extracting')
                     vbr.extract_vbr()
@@ -191,7 +190,7 @@ class _Dump(object):
                             os.path.isfile(os.path.join(self.root_reg, f))]
             path_ntuserdat = os.path.join(self.userprofile, '*', 'NTUSER.DAT')
             files_to_zip.extend([os.path.join(_VSS._get_instance(self.params, os.path.splitdrive(f)[0])._return_root(),
-                                              os.path.splitdrive(f)[1]) for f in glob.glob(path_ntuserdat) if
+                                              os.path.splitdrive(f)[1].lstrip('\\')) for f in glob.glob(path_ntuserdat) if
                                  os.path.isfile(f)])
             for f in files_to_zip:
                 arch.record(f)

@@ -2,6 +2,8 @@
 packages=fast
 [extension]
 random=False
+#[env]
+#HOMEDRIVE=C:
 [dump]
 dump=mft,ram,mbr,registry
 mft_export=True
@@ -36,4 +38,3 @@ cert_filtered_subject=subject;O=Microsoft Corporation|Microsoft Time-Stamp Servi
 [yara]
 filtered_yara=False
 dir_rules=yara-rules
-

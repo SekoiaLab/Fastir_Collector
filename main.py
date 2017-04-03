@@ -60,7 +60,7 @@ def detect_os():
     version = []
     for c in c.Win32_OperatingSystem():
         version.append(c.Name)
-    name_version = version[0]
+    # name_version = version[0]
 
 
 def set_environment_options(param_options):
@@ -84,6 +84,9 @@ def set_environment_options(param_options):
         username = os.environ["USERNAME"]
     except KeyError:
         username = os.environ["USERPROFILE"].split("\\")[-1]
+
+    if "homedrive" in param_options:
+        param_options["USERPROFILE"] = param_options["homedrive"] + os.path.splitdrive(param_options["USERPROFILE"])[1]
 
     if "fs" in param_options:
         user_env_var = ["TEMP", "USERPROFILE", "APPDATA", "LOCALAPPDADATA", "TMP"]
@@ -171,7 +174,7 @@ def profile_used(path, param_options):
             param_options["mft_export"] = True
 
     if config.has_section("registry"):
-        if config.has_option("registry","custom_registry_keys"):
+        if config.has_option("registry", "custom_registry_keys"):
             param_options["custom_registry_keys"] = config.get("registry", "custom_registry_keys")
             param_options["registry_recursive"] = yaml.load(config.get("registry", "registry_recursive"))
         if config.has_option('registry', 'get_autoruns'):
@@ -246,9 +249,8 @@ def parse_command_line():
     parser.add_argument("--output_dir", dest="output_dir", help="Directory path for CSV outputs")
     parser.add_argument("--dump", dest="dump",
                         help="use: --dump ram if you want to dump ram. To list dump functionalities, --dump list")
-
     parser.add_argument("--profile", dest="profile", help="--profile yourfile.conf. The filepath must be absolute")
-
+    parser.add_argument("--homedrive", dest="homedrive", help="--homedrive drive: to manually set HOMEDRIVE for FastIR")
     args = parser.parse_args()
 
     if args.dump == "list":
@@ -310,6 +312,12 @@ def validate_options(param_options, parser):
             sys.stderr.write("\nMissing fs filters ('size' and/or 'mime_filter')")
             sys.exit(1)
 
+    if "homedrive" in param_options:
+        if not re.match('^[A-z]:$', param_options["homedrive"]):
+            parser.print_help()
+            sys.stderr.write("\nhomedrive expected to be in '[A-z]:' format.")
+            sys.exit(1)
+
 
 def set_options():
     """Define all options needed for execution, based on config, command line and environment"""
@@ -338,9 +346,11 @@ def set_options():
             param_options["output_dir"] = create_output_dir(param_options["output_dir"], mount_letter)
             param_options["mount_letter"] = mount_letter
         else:
-            param_options["output_dir"] = create_output_dir(os.path.join(os.path.dirname(__file__),param_options["output_dir"]))
-    except Exception as e:
-            param_options["output_dir"] = create_output_dir(os.path.join(os.path.dirname(__file__),param_options["output_dir"]))
+            param_options["output_dir"] = create_output_dir(os.path.join(os.path.dirname(__file__),
+                                                                         param_options["output_dir"]))
+    except Exception:
+            param_options["output_dir"] = create_output_dir(os.path.join(os.path.dirname(__file__),
+                                                                         param_options["output_dir"]))
     return param_options
 
 
@@ -401,6 +411,8 @@ def main(param_options):
         unmount_share(param_options["mount_letter"])
 
     param_options['logger'].info('Check here %s for yours results' % os.path.abspath(param_options['output_dir']))
+
+
 if __name__ == "__main__":
     # Add multiprocessing support when frozen with pyinstaller
     if hasattr(sys, "frozen"):

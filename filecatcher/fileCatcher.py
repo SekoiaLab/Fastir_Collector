@@ -48,7 +48,8 @@ class _FileCatcher(object):
 
             for f in lst.list_files(shadow_directory):
                 zip_proc = False
-                if self._filtered_by_date(f) and self._filtered_size(f) and self._check_depth(f,self.dirs[directory], shadow_directory):
+                if self._filtered_by_date(f) and self._filtered_size(f) and self._check_depth(f, self.dirs[directory],
+                                                                                              shadow_directory):
                     if self.filtered_yara:
                         if not yara_matching:
                             yara_matching = _Intel(f, self.params)
@@ -64,7 +65,6 @@ class _FileCatcher(object):
                             except Exception as e:
                                 yield f, str(rules), 'N/A', 'N/A', 'N/A', str(e), self._get_creation_date(f), os.stat(
                                     f).st_size == 0
-
 
                         if self._is_PE(mime):
                             if self.filtered_certificates:
@@ -94,17 +94,20 @@ class _FileCatcher(object):
                                 f).st_size == 0
                 else:
                     try:
-                        self.logger.warn('file %s not cache by size %s or date %s' % (f, os.stat(f).st_size, self._get_modification_date(f)))
+                        self.logger.warn('file %s not cache by size %s or date %s' % (f, os.stat(f).st_size,
+                                                                                      self._get_modification_date(f)))
                     except Exception as e:
                         self.logger.error(e)
                         self.logger.error(f)
 
-    def _get_creation_date(self, f):
+    @staticmethod
+    def _get_creation_date(f):
         t = os.path.getctime(f)
         date_value = datetime.datetime.fromtimestamp(t)
         return date_value
 
-    def _get_modification_date(self, f):
+    @staticmethod
+    def _get_modification_date(f):
         t = os.path.getmtime(f)
         date_value = datetime.datetime.fromtimestamp(t)
         return date_value
@@ -146,7 +149,8 @@ class _FileCatcher(object):
             self.logger.error(e)
             return False
 
-    def _filtered_ext(self, ext, filters):
+    @staticmethod
+    def _filtered_ext(ext, filters):
         if '|EMPTY|' in filters:
             if len(ext) == 0:
                 return True
@@ -170,13 +174,13 @@ class _FileCatcher(object):
         else:
             return False
 
-    def _check_depth(self, f,depth, directory):
+    @staticmethod
+    def _check_depth(f, depth, directory):
         if depth == '*':
             return True
         return int(depth) >= f[len(directory) + len(os.path.sep):].count(os.path.sep)
 
-    def _get_url_VT(self,sha256):
-        url_vt = None
+    def _get_url_VT(self, sha256):
         if 'N/A' in sha256:
             url_vt = 'not URL VT'
         else:
@@ -187,7 +191,7 @@ class _FileCatcher(object):
         with open(self.output_dir + '\\' + self.computer_name + '_Filecatcher' + self.rand_ext, 'wb') as fw:
             csv_writer = get_csv_writer(fw)
             write_to_csv(['COMPUTER NAME', 'TYPE', 'DATE', 'PATH', 'MD5', 'SHA1', 'SHA256', 'MIMETYPE', 'ZIP',
-                           'EMPTY', 'VT'], csv_writer)
+                          'EMPTY', 'VT'], csv_writer)
             for f, mime, md5, sha1, sha256, zip_value, datem, empty in files:
                 write_to_csv([self.computer_name, 'Filecatcher', unicode(datem),
                               unicode(f), unicode(md5), unicode(sha1), unicode(sha256), unicode(mime),
@@ -203,7 +207,7 @@ class _FileCatcher(object):
             with open(self.output_dir + '\\' + self.computer_name + '_Filecatcher' + self.rand_ext, 'wb') as fw:
                 json_writer = get_json_writer(fw)
                 headers = ['COMPUTER NAME', 'TYPE', 'DATE', 'PATH', 'MD5', 'SHA1', 'SHA256', 'MIMETYPE', 'ZIP',
-                             'EMPTY', 'VT']
+                           'EMPTY', 'VT']
                 for f, mime, md5, sha1, sha256, zip_value, datem, empty in files:
                     write_to_json(headers, [self.computer_name, 'Filecatcher', unicode(datem), unicode(f), unicode(md5),
                                   unicode(sha1), unicode(sha256), unicode(mime), unicode(zip_value), unicode(empty),
