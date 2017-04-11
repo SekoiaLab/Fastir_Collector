@@ -94,7 +94,8 @@ class UnicodeWriter:
                     try:
                         columns.append(value.decode(encoding).encode("utf-8", "ignore"))
                     except UnicodeEncodeError:
-                        columns.append("".join([a for a in s]).encode("utf-8", "ignore"))
+                        columns.append('0x' + binascii.b2a_hex(s).encode("utf-8", "ignore"))
+                        # columns.append("".join([a for a in s]).encode("utf-8", "ignore"))
                 else:
                     # last hope
                     columns.append("".join([a for a in s]).encode("utf-8", "ignore"))
@@ -144,7 +145,7 @@ def encode_json_dict(jdict):
                 try:
                     to_write[k] = value.decode(encoding).encode('utf-8', 'ignore')
                 except UnicodeEncodeError:
-                    to_write[k] = binascii.b2a_hex(v).encode('UTF-8', 'ignore')
+                    to_write[k] = '0x' + binascii.b2a_hex(v).encode('UTF-8', 'ignore')
             else:
                 to_write[k] = ''.join([a for a in v]).encode('utf-8', 'ignore')
     return to_write
