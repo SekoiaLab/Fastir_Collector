@@ -94,8 +94,9 @@ class _FileCatcher(object):
                                 f).st_size == 0
                 else:
                     try:
-                        self.logger.warn('file %s not cache by size %s or date %s' % (f, os.stat(f).st_size,
-                                                                                      self._get_modification_date(f)))
+                        true_f = os.path.splitdrive(self.systemroot)[0] + '\\' + f.split('\\', 6)[-1]
+                        self.logger.warn('file %s not cached by size %s or date %s' % (true_f, os.stat(f).st_size,
+                                                                                       self._get_modification_date(f)))
                     except Exception as e:
                         self.logger.error(e)
                         self.logger.error(f)
@@ -193,6 +194,7 @@ class _FileCatcher(object):
             write_to_csv(['COMPUTER NAME', 'TYPE', 'DATE', 'PATH', 'MD5', 'SHA1', 'SHA256', 'MIMETYPE', 'ZIP',
                           'EMPTY', 'VT'], csv_writer)
             for f, mime, md5, sha1, sha256, zip_value, datem, empty in files:
+                f = os.path.splitdrive(self.systemroot)[0] + '\\' + f.split('\\', 6)[-1]
                 write_to_csv([self.computer_name, 'Filecatcher', unicode(datem),
                               unicode(f), unicode(md5), unicode(sha1), unicode(sha256), unicode(mime),
                               unicode(zip_value), unicode(empty), self._get_url_VT(sha256)], csv_writer)
@@ -209,6 +211,7 @@ class _FileCatcher(object):
                 headers = ['COMPUTER NAME', 'TYPE', 'DATE', 'PATH', 'MD5', 'SHA1', 'SHA256', 'MIMETYPE', 'ZIP',
                            'EMPTY', 'VT']
                 for f, mime, md5, sha1, sha256, zip_value, datem, empty in files:
+                    f = os.path.splitdrive(self.systemroot)[0] + '\\' + f.split('\\', 6)[-1]
                     write_to_json(headers, [self.computer_name, 'Filecatcher', unicode(datem), unicode(f), unicode(md5),
                                   unicode(sha1), unicode(sha256), unicode(mime), unicode(zip_value), unicode(empty),
                                   self._get_url_VT(sha256)], json_writer)
