@@ -124,7 +124,6 @@ def set_environment_options(param_options):
             param_options["zip"] = True
         else:
             param_options["zip"] = False
-
     return param_options
 
 

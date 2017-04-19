@@ -12,7 +12,7 @@ class Windows2012ServerR2UserReg(_Reg):
             r"Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSavePidlMRU")
 
     def csv_user_assist(self):
-        super(Windows2012ServerR2UserReg, self)._csv_user_assist(0, True)
+        super(Windows2012ServerR2UserReg, self)._csv_user_assist(True)
 
     def csv_networks_list(self):
         super(Windows2012ServerR2UserReg, self)._csv_networks_list(
@@ -23,7 +23,7 @@ class Windows2012ServerR2UserReg(_Reg):
             r"Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSavePidlMRU")
 
     def json_user_assist(self):
-        super(Windows2012ServerR2UserReg, self)._json_user_assist(0, True)
+        super(Windows2012ServerR2UserReg, self)._json_user_assist(True)
 
     def json_networks_list(self):
         super(Windows2012ServerR2UserReg, self)._json_networks_list(

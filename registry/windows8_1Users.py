@@ -12,7 +12,7 @@ class Windows8_1UserReg(_Reg):
             r"Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSavePidlMRU")
 
     def csv_user_assist(self):
-        super(Windows8_1UserReg, self)._csv_user_assist(0, True)
+        super(Windows8_1UserReg, self)._csv_user_assist(True)
 
     def csv_networks_list(self):
         super(Windows8_1UserReg, self)._csv_networks_list(
@@ -20,10 +20,10 @@ class Windows8_1UserReg(_Reg):
 
     def json_open_save_mru(self):
         super(Windows8_1UserReg, self)._json_open_save_mru(
-            r"Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSaveMRU")
+            r"Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSavePidlMRU")
 
     def json_user_assist(self):
-        super(Windows8_1UserReg, self)._json_user_assist(-6, True)
+        super(Windows8_1UserReg, self)._json_user_assist(True)
 
     def json_networks_list(self):
         super(Windows8_1UserReg, self)._json_networks_list(

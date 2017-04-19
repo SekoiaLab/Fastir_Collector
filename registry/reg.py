@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 import codecs
 from utils.utils import convert_windate, dosdate, get_csv_writer, get_json_writer, write_list_to_json, write_dict_json,\
-    write_list_to_csv, process_hashes
+    write_list_to_csv, process_hashes, close_json_writer
 import registry_obj
 from win32com.shell import shell
 import struct
@@ -12,7 +12,6 @@ from csv import reader
 from utils.vss import _VSS
 import re
 from utils.utils import regex_patern_path
-import os
 from filecatcher.archives import _Archives
 import datetime
 
@@ -60,13 +59,13 @@ def get_usb_key_info(key_name):
     return key_ids
 
 
-def csv_user_assist_value_decode_win7_and_after(str_value_datatmp, count_offset):
+def csv_user_assist_value_decode_win7_and_after(str_value_datatmp):
     """The value in user assist has changed since Win7. It is taken into account here."""
     # 16 bytes data
     str_value_data_session = str_value_datatmp[0:4]
     str_value_data_session = unicode(struct.unpack("<I", str_value_data_session)[0])
     str_value_data_count = str_value_datatmp[4:8]
-    str_value_data_count = unicode(struct.unpack("<I", str_value_data_count)[0] + count_offset + 1)
+    str_value_data_count = unicode(struct.unpack("<I", str_value_data_count)[0])
     str_value_data_focus = str_value_datatmp[12:16]
     str_value_data_focus = unicode(struct.unpack("<I", str_value_data_focus)[0])
     str_value_data_timestamp = str_value_datatmp[60:68]
@@ -83,7 +82,7 @@ def csv_user_assist_value_decode_win7_and_after(str_value_datatmp, count_offset)
     return arr_data
 
 
-def csv_user_assist_value_decode_before_win7(str_value_datatmp, count_offset):
+def csv_user_assist_value_decode_before_win7(str_value_datatmp):
     """
     The Count registry key contains values representing the programs
     Each value is separated as :
@@ -98,7 +97,7 @@ def csv_user_assist_value_decode_before_win7(str_value_datatmp, count_offset):
     str_value_data_session = str_value_datatmp[0:4]
     str_value_data_session = unicode(struct.unpack("<I", str_value_data_session)[0])
     str_value_data_count = str_value_datatmp[4:8]
-    str_value_data_count = unicode(struct.unpack("<I", str_value_data_count)[0] + count_offset + 1)
+    str_value_data_count = unicode(struct.unpack("<I", str_value_data_count)[0] - 5)
     str_value_data_timestamp = str_value_datatmp[8:16]
     try:
         timestamp = struct.unpack("<Q", str_value_data_timestamp)[0]
@@ -429,7 +428,7 @@ class _Reg(object):
                     construct_list_from_key(hive_list, sub_key, is_recursive)
         return hive_list
 
-    def __get_user_assist(self, count_offset, is_win7_or_further):
+    def __get_user_assist(self, is_win7_or_further):
         """
             Extracts information from UserAssist registry key which contains information about executed programs
             The count offset is for Windows versions before 7, where it would start at 6
@@ -471,9 +470,9 @@ class _Reg(object):
                                         str_value_name))
                 else:
                     if is_win7_or_further:
-                        data = csv_user_assist_value_decode_win7_and_after(str_value_datatmp, count_offset)
+                        data = csv_user_assist_value_decode_win7_and_after(str_value_datatmp)
                     else:
-                        data = csv_user_assist_value_decode_before_win7(str_value_datatmp, count_offset)
+                        data = csv_user_assist_value_decode_before_win7(str_value_datatmp)
                     to_csv_list.append((self.computer_name,
                                         "user_assist",
                                         item[VALUE_LAST_WRITE_TIME],
@@ -487,7 +486,7 @@ class _Reg(object):
 
     def _get_network_list(self, key):
         to_csv_list = []
-        self._generate_hklm_csv_list(to_csv_list, 'network _list', key, is_recursive=True)
+        self._generate_hklm_csv_list(to_csv_list, 'network_list', key, is_recursive=True)
         result = {}
         for item in to_csv_list[1:]:
             if not item[4] in result:
@@ -497,28 +496,33 @@ class _Reg(object):
             elif item[5] == 'Description':
                 result[item[4]]['Description'] = item[8]
             elif item[5] == 'DateCreated':
-                list_item = struct.unpack('<HHHHHHHH', item[8])
-                result[item[4]]['DateCreated'] = datetime.datetime(list_item[0], list_item[1], list_item[3]
-                                                                   , list_item[4], list_item[5],
-                                                                   list_item[6]).isoformat()
-            elif item[5] == 'DateLastConnected':
-                list_item = struct.unpack('<HHHHHHHH', item[8])
                 try:
+                    list_item = struct.unpack('<HHHHHHHH', item[8])
+                except:
+                    list_item = struct.unpack('<HHHHHHHH', item[8].encode('utf-16-le'))
+                finally:
+                    result[item[4]]['DateCreated'] = datetime.datetime(list_item[0], list_item[1],
+                                                                       list_item[3], list_item[4],
+                                                                       list_item[5], list_item[6]).isoformat()
+            elif item[5] == 'DateLastConnected':
+                try:
+                    list_item = struct.unpack('<HHHHHHHH', item[8])
+                except:
+                    list_item = struct.unpack('<HHHHHHHH', item[8].encode('utf-16-le'))
+                finally:
                     result[item[4]]['DateLastConnected'] = datetime.datetime(list_item[0], list_item[1],
                                                                              list_item[3], list_item[4],
                                                                              list_item[5], list_item[6]).isoformat()
-                except:
-                    pass
         return result
 
     def _json_networks_list(self, key):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_network_list%s' % (self.computer_name, self.rand_ext)),
-                      'wb') as output:
+            with open(os.path.join(self.output_dir, '%s_network_list%s' % (self.computer_name, self.rand_ext)), 'wb') as output:
                 json_writer = get_json_writer(output)
                 result = self._get_network_list(key)
                 for v in result.values():
-                    write_dict_json(v, json_writer)
+                    json_writer.dump_json(v)
+                close_json_writer(json_writer)
 
     def _csv_networks_list(self, key):
         with open(os.path.join(self.output_dir, '%s_network_list%s' % (self.computer_name, self.rand_ext)),
@@ -529,16 +533,16 @@ class _Reg(object):
             arr_data.insert(0, network_list_result.values()[0].keys())
             write_list_to_csv(arr_data, csv_writer)
 
-    def _csv_user_assist(self, count_offset, is_win7_or_further):
+    def _csv_user_assist(self, is_win7_or_further):
         with open(self.output_dir + "\\" + self.computer_name + "_user_assist" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
-            write_list_to_csv(self.__get_user_assist(count_offset, is_win7_or_further), csv_writer)
+            write_list_to_csv(self.__get_user_assist(is_win7_or_further), csv_writer)
 
-    def _json_user_assist(self, count_offset, is_win7_or_further):
+    def _json_user_assist(self, is_win7_or_further):
         if self.destination == 'local':
             with open(self.output_dir + "\\" + self.computer_name + "_user_assist" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
-                write_list_to_json(self.__get_user_assist(count_offset, is_win7_or_further), json_writer)
+                write_list_to_json(self.__get_user_assist(is_win7_or_further), json_writer)
 
     def _get_files_and_hashes(self, csv_files):
         csv_files_transform = []
@@ -619,7 +623,7 @@ class _Reg(object):
                                         registry_obj.get_str_type(item[VALUE_TYPE]), path))
         return to_csv_list
 
-    def _csv_PowerPoint_mru(self, str_powerpoint_mru):
+    def _csv_powerpoint_mru(self, str_powerpoint_mru):
         with open(self.output_dir + "\\" + self.computer_name + "_powerpointMRU" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_powerpoint_mru(str_powerpoint_mru), csv_writer)

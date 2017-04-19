@@ -9,10 +9,10 @@ class WindowsVistaUserReg(_Reg):
 
     def csv_open_save_mru(self):
         super(WindowsVistaUserReg, self)._csv_open_save_mru(
-            r"Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSaveMRU")
+            r"Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSavePidlMRU")
 
     def csv_user_assist(self):
-        super(WindowsVistaUserReg, self)._csv_user_assist(-6, False)
+        super(WindowsVistaUserReg, self)._csv_user_assist(False)
 
     def csv_networks_list(self):
         super(WindowsVistaUserReg, self)._csv_networks_list(
@@ -23,7 +23,7 @@ class WindowsVistaUserReg(_Reg):
             r"Software\Microsoft\Windows\CurrentVersion\Explorer\ComDlg32\OpenSavePidlMRU")
 
     def json_user_assist(self):
-        super(WindowsVistaUserReg, self)._json_user_assist(0, False)
+        super(WindowsVistaUserReg, self)._json_user_assist(False)
 
     def json_networks_list(self):
         super(WindowsVistaUserReg, self)._json_networks_list(

@@ -450,6 +450,7 @@ def write_to_json(header, arr_data, json_writer):
 
 def write_dict_json(arr_data, json_writer):
     json_writer.dump_json(arr_data)
+    json_writer.close_current()
 
 
 def close_json_writer(json_writer):
