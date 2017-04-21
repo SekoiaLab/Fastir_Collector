@@ -1,8 +1,9 @@
 # FastIR Collector
 
 ## Concepts
+This tool collects different artefacts on live Windows and records the results in csv or json files. With the analyses
+of these artefacts, an early compromission can be detected.
 
-This tool collects different artefacts on live Windows and records the results in csv files. With the analyses of this artefacts, an early compromission can be detected.
 ## Requirements
 - pywin32
 - python WMI
@@ -14,41 +15,42 @@ This tool collects different artefacts on live Windows and records the results i
 - pytz
 
 Alternatively, a `pip freeze` output is available in `reqs.pip`.
- 
-## Compiling
 
+## Compiling
 To compile FastIR, you will need [pyinstaller](https://github.com/pyinstaller/pyinstaller).
 Simply use ```pyinstaller pyinstaller.spec``` at the project root directory.
 The binary will by default be in `/dist`.
 
-Important: for x64 systems,  check that your local python installation is also
+Important: for x64 systems, check that your local python installation is also
 in x64.
 
 ## Execution
-- ./fastIR_x64.exe -h for help
-- ./fastIR_x64.exe --packages fast  extract all artefacts without dump package artefacts
-- ./fastIR_x64.exe --packages dump --dump mft to extract MFT
-- ./fastIR_x64.exe --packages all --ouput_dir your_ouput_dir to set the directory output (by default is the current directory)
-- ./fastIR_x64.exe --profile you_file_profile to set your own profile extraction
+- `./fastIR_x64.exe -h` for help
+- `./fastIR_x64.exe --packages fast` extract all artefacts except dump and FileCatcher packages'
+- `./fastIR_x64.exe --packages dump --dump mft` to extract MFT
+- `./fastIR_x64.exe --packages all --output_dir your_output_dir` to set the directory output
+(by default `./output/`)
+- `./fastIR_x64.exe --profile you_file_profile` to set your own profile extraction
 
 ## Packages
-
-Packages Lists and Artefact
+Packages List and Artefacts:
 
   * fs
-    * IE History
+    * IE/Firefox/Chrome History
+    * IE/Firefox/Chrome Downloads
     * Named Pipes
     * Prefetch
     * Recycle-bin
-    * health
+
+  * health
     * ARP Table
-    * Drives list
-    * Network drives
-    * Networks Cards
+    * Drives List
+    * Network Drives
+    * Network Cards
     * Processes
-    * Routes Tables
+    * Routing Table
     * Tasks
-    * Scheluded jobs
+    * Scheduled Jobs
     * Services
     * Sessions
     * Network Shares
@@ -57,21 +59,21 @@ Packages Lists and Artefact
   * registry
     * Installer Folders
     * OpenSaveMRU
-    * Recents Docs
+    * Recent Docs
     * Services
     * Shellbags
     * Autoruns
     * USB History
-    * Userassists
+    * UserAssists
     * Networks List
 
   * memory
     * Clipboard
-    * dlls loaded
+    * Loaded DLLs
     * Opened Files
 
   * dump
-    * MFT (raw or timeline) we use AnalyseMFT for https://github.com/dkovar/analyzeMFT
+    * MFT (raw or timeline) we use [AnalyseMFT](https://github.com/dkovar/analyzeMFT)
     * MBR
     * RAM
     * DISK
@@ -79,13 +81,13 @@ Packages Lists and Artefact
     * SAM
     
   * FileCatcher
-    * based on mime type
+    * Based on mime type
     * Define path and depth to filter the search
-    * possibility to filter your search
+    * Possibility to filter your search
     * Yara Rules
     
-The full documentation can be download here: https://github.com/SekoiaLab/Fastir_Collector/blob/master/documentation/FastIR_Documentation.pdf
+The full documentation can be downloaded [here](https://github.com/SekoiaLab/Fastir_Collector/blob/master/documentation/FastIR_Documentation.pdf).
 
-A post about FastIR Collector and advanced Threats can be consulted here:  http://www.sekoia.fr/blog/fastir-collector-on-advanced-threats
+A post about FastIR Collector and advanced Threats can be consulted [here](http://www.sekoia.fr/blog/fastir-collector-on-advanced-threats)
+with its [white paper](http://www.sekoia.fr/blog/wp-content/uploads/2015/11/FastIR-Collector-on-advanced-threats_v1.5.pdf).
 
-with the paper:  http://www.sekoia.fr/blog/wp-content/uploads/2015/10/FastIR-Collector-on-advanced-threats_v1.4.pdf
