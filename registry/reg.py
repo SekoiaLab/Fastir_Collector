@@ -547,8 +547,7 @@ class _Reg(object):
     def _get_files_and_hashes(self, csv_files):
         csv_files_transform = []
         arch = _Archives(os.path.join(self.output_dir, self.computer_name + '_autoruns.zip'), self.logger)
-        for COMPUTER_NAME, TYPE, LAST_WRITE_TIME, HIVE, KEY_PATH, \
-            ATTR_NAME, REG_TYPE, ATTR_TYPE, ATTR_DATA in csv_files:
+        for COMPUTER_NAME, TYPE, LAST_WRITE_TIME, HIVE, KEY_PATH, ATTR_NAME, REG_TYPE, ATTR_TYPE, ATTR_DATA in csv_files:
             m = re.match(regex_patern_path, ATTR_DATA)
             md5 = sha1 = sha256 = 'N\/A'
             if m:

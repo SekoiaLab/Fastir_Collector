@@ -10,7 +10,7 @@ import ctypes
 import struct
 
 from utils.utils import look_for_outlook_dirs, look_for_files, zip_archive, get_csv_writer, get_json_writer, \
-     write_to_csv, write_to_json, close_json_writer, record_sha256_logs
+     write_to_csv, write_to_json, close_json_writer, record_sha256_logs, process_hashes
 from registry.registry_obj import get_userprofiles_from_reg
 from utils.utils_rawstring import sekoiamagic
 from win32com.shell import shell, shellcon
@@ -68,7 +68,7 @@ class _FS(object):
     def _list_windows_prefetch(self, is_compressed=False):
         """Outputs windows prefetch files in a csv"""
         """See http://www.forensicswiki.org/wiki/Windows_Prefetch_File_Format"""
-        prefetch_path = self.systemroot + '\Prefetch\*.pf'
+        prefetch_path = self.systemroot + '\\Prefetch\\*.pf'
         list_prefetch_files = look_for_files(prefetch_path)
 
         for prefetch_file in list_prefetch_files:
@@ -107,7 +107,7 @@ class _FS(object):
                 unknown_values = content[0x0008:0x0008 + 4]
                 unknown_values = ' '.join(c.encode('hex') for c in unknown_values)
                 file_size = content[0x000c:0x000c + 4]
-                file_size = struct.unpack("<I", file_size)
+                file_size = struct.unpack("<I", file_size)[0]
                 exec_name = content[0x0010:0x0010 + 60]
                 try:
                     exec_name = exec_name.decode('utf-16-le').replace("\x00", "")
@@ -146,14 +146,14 @@ class _FS(object):
                 hash_table_a = self.__decode_section_a(format_version, content, section_a)
                 try:
                     list_str_c = self.__decode_section_c(content, section_c, length_c)
-                    yield prefetch_file, format_version, file_size, exec_name, datetime.datetime.fromtimestamp(
-                        tc), datetime.datetime.fromtimestamp(tm), exec_count, hash_table_a, list_str_c
+                    yield prefetch_file, format_version, file_size, exec_name, datetime.datetime.utcfromtimestamp(
+                        tc), datetime.datetime.utcfromtimestamp(tm), exec_count, hash_table_a, list_str_c
                 except:
                     pass
 
             except:
                 self.logger.error(traceback.format_exc())
-                self.logger.error('Error decoding prefetc %s' % prefetch_file)
+                self.logger.error('Error decoding prefetch %s' % prefetch_file)
 
     def _filtered_magic(self, f):
         mime = sekoiamagic(f)
@@ -225,27 +225,27 @@ class _FS(object):
                 yield time, url, title, user, profile
 
     def _csv_list_named_pipes(self, pipes):
-        with open(self.output_dir + '\\' + self.computer_name + '_named_pipes' + self.rand_ext, 'wb') as output:
+        with open(self.output_dir + self.computer_name + '_named_pipes' + self.rand_ext, 'wb') as output:
             csv_writer = get_csv_writer(output)
             write_to_csv(("COMPUTER_NAME", "TYPE", "NAME"), csv_writer)
             for pipe in pipes:
                 write_to_csv([self.computer_name, 'named_pipes', pipe], csv_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_named_pipes' + self.rand_ext,
-                           self.output_dir + '\\' + self.computer_name + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_named_pipes' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_list_named_pipes(self, pipes):
         if self.destination == 'local':
-            with open(self.output_dir + '\\' + self.computer_name + '_named_pipes' + self.rand_ext, 'wb') as output:
+            with open(self.output_dir + self.computer_name + '_named_pipes' + self.rand_ext, 'wb') as output:
                 json_writer = get_json_writer(output)
                 header = ["COMPUTER_NAME", "TYPE", "NAME"]
                 for pipe in pipes:
                     write_to_json(header, [self.computer_name, 'named_pipes', pipe], json_writer)
                 close_json_writer(json_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_named_pipes' + self.rand_ext,
-                           self.output_dir + '\\' + self.computer_name + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_named_pipes' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _csv_windows_prefetch(self, wpref):
-        with open(self.output_dir + '\\' + self.computer_name + '_prefetch' + self.rand_ext, 'wb') as output:
+        with open(self.output_dir + self.computer_name + '_prefetch' + self.rand_ext, 'wb') as output:
             csv_writer = get_csv_writer(output)
             write_to_csv(("COMPUTER_NAME", "TYPE", "FILE", "VERSION", "SIZE", "EXEC_NAME", "CREATE_TIME",
                           "MODIFICATION_TIME", "RUN_COUNT", "START_TIME", "DURATION", "AVERAGE_DURATION",
@@ -260,12 +260,12 @@ class _FS(object):
                               unicode(tc), unicode(tm), unicode(run_count), unicode(hash_table_a['start_time']),
                               unicode(hash_table_a['duration']), unicode(hash_table_a['average_duration']), str_c],
                              csv_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_prefetch' + self.rand_ext,
-                           self.output_dir + '\\' + self.computer_name + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_prefetch' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_windows_prefetch(self, wpref):
         if self.destination == 'local':
-            with open(self.output_dir + '\\' + self.computer_name + '_prefetch' + self.rand_ext, 'wb') as output:
+            with open(self.output_dir + self.computer_name + '_prefetch' + self.rand_ext, 'wb') as output:
                 json_writer = get_json_writer(output)
                 header = ["COMPUTER_NAME", "TYPE", "FILE", "VERSION", "SIZE", "EXEC_NAME", "CREATE_TIME",
                           "MODIFICATION_TIME", "RUN_COUNT", "START_TIME", "DURATION", "AVERAGE_DURATION",
@@ -283,53 +283,53 @@ class _FS(object):
                                            str_c],
                                   json_writer)
                 close_json_writer(json_writer)
-            record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_prefetch' + self.rand_ext,
-                               self.output_dir + '\\' + self.computer_name + '_sha256.log')
+            record_sha256_logs(self.output_dir + self.computer_name + '_prefetch' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def _csv_firefox_history(self, fhistory):
-        with open(self.output_dir + '\\' + self.computer_name + '_firefox_history' + self.rand_ext, 'wb') as output:
+        with open(self.output_dir + self.computer_name + '_firefox_history' + self.rand_ext, 'wb') as output:
             header = ["COMPUTER_NAME", "TYPE", "TIME", "URL", "USER", "PROFILE"]
             csv_writer = get_csv_writer(output)
             write_to_csv(header, csv_writer)
             for time, url, user, profile in fhistory:
                 write_to_csv([self.computer_name, 'firefox_history', time, url, user, profile], csv_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_firefox_history' + self.rand_ext,
-                           self.output_dir + '\\' + self.computer_name + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_firefox_history' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_firefox_history(self, fhistory):
-        with open(self.output_dir + '\\' + self.computer_name + '_firefox_history' + self.rand_ext, 'wb') as output:
+        with open(self.output_dir + self.computer_name + '_firefox_history' + self.rand_ext, 'wb') as output:
             header = ["COMPUTER_NAME", "TYPE", "TIME", "URL", "USER", "PROFILE"]
             json_writer = get_json_writer(output)
             for time, url, user, profile in fhistory:
                 write_to_json(header, [self.computer_name, 'firefox_history', time, url, user, profile], json_writer)
             close_json_writer(json_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_firefox_history' + self.rand_ext,
-                           self.output_dir + '\\' + self.computer_name + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_firefox_history' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _csv_chrome_history(self, chistory):
-        with open(self.output_dir + '\\' + self.computer_name + '_chrome_history' + self.rand_ext, 'wb') as output:
+        with open(self.output_dir + self.computer_name + '_chrome_history' + self.rand_ext, 'wb') as output:
             csv_writer = get_csv_writer(output)
             write_to_csv(("COMPUTER_NAME", "TYPE", "TIME", "URL", "TITLE", "USER", "PROFILE"), csv_writer)
             for time, url, title, user, profile in chistory:
                 write_to_csv([self.computer_name, 'chrome_history', time, url, title, user, profile], csv_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_chrome_history' + self.rand_ext,
-                           self.output_dir + '\\' + self.computer_name + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_chrome_history' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_chrome_history(self, chistory):
         if self.destination == 'local':
-            with open(self.output_dir + '\\' + self.computer_name + '_chrome_history' + self.rand_ext, 'wb') as output:
+            with open(self.output_dir + self.computer_name + '_chrome_history' + self.rand_ext, 'wb') as output:
                 json_writer = get_json_writer(output)
                 header = ["COMPUTER_NAME", "TYPE", "TIME", "URL", "TITLE", "USER", "PROFILE"]
                 for time, url, title, user, profile in chistory:
                     write_to_json(header, [self.computer_name, 'chrome_history',
                                            time, url, title, user, profile], json_writer)
                 close_json_writer(json_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_chrome_history' + self.rand_ext,
-                           self.output_dir + '\\' + self.computer_name + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_chrome_history' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def csv_recycle_bin(self):
         """Exports the filenames contained in the recycle bin"""
-        with open(self.output_dir + '\\' + self.computer_name + '_recycle_bin' + self.rand_ext, 'wb') as output:
+        with open(self.output_dir + self.computer_name + '_recycle_bin' + self.rand_ext, 'wb') as output:
             csv_writer = get_csv_writer(output)
             write_to_csv(("COMPUTER_NAME", "TYPE", "NAME_1", "NAME_2"), csv_writer)
             idl = shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_BITBUCKET)
@@ -340,12 +340,12 @@ class _FS(object):
                 write_to_csv(
                     [self.computer_name, 'recycle_bin', files.GetDisplayNameOf(bin_file, shellcon.SHGDN_NORMAL),
                      files.GetDisplayNameOf(bin_file, shellcon.SHGDN_FORPARSING)], csv_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_recycle_bin' + self.rand_ext,
-                           self.output_dir + '\\' + self.computer_name + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_recycle_bin' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def json_recycle_bin(self):
         if self.destination == 'local':
-            with open(self.output_dir + '\\' + self.computer_name + '_recycle_bin' + self.rand_ext, 'wb') as output:
+            with open(self.output_dir + self.computer_name + '_recycle_bin' + self.rand_ext, 'wb') as output:
                 json_writer = get_json_writer(output)
                 header = ["COMPUTER_NAME", "TYPE", "NAME_1", "NAME_2"]
                 idl = shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_BITBUCKET)
@@ -358,8 +358,8 @@ class _FS(object):
                                    files.GetDisplayNameOf(bin_file, shellcon.SHGDN_NORMAL),
                                    files.GetDisplayNameOf(bin_file, shellcon.SHGDN_FORPARSING)], json_writer)
                 close_json_writer(json_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_recycle_bin' + self.rand_ext,
-                           self.output_dir + '\\' + self.computer_name + '_sha256.log')
+        record_sha256_logs(self.output_dir + self.computer_name + '_recycle_bin' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def get_e_mail_attachments(self):
         """Checks OST and PST windows in correct directories and zip it in a given archive"""
@@ -371,3 +371,31 @@ class _FS(object):
                 zip_archive(outlook_pst_files, self.output_dir, 'pst', self.logger)
             if len(outlook_ost_files) > 0:
                 zip_archive(outlook_ost_files, self.output_dir, 'ost', self.logger)
+
+    def _get_startup_files(self, path):
+        files = look_for_files(path)
+        zip_archive(files, self.output_dir, 'autoruns', self.logger, 'a')
+        for start_file in files:
+            md5, sha1, sha256 = process_hashes(start_file)
+            user = start_file.replace(self.userprofile + '\\', '').split('\\', 1)[0]
+            filename = os.path.split(start_file)[1]
+            yield [self.computer_name, 'startup_file', filename, user, md5, sha1, sha256]
+
+    def _csv_get_startup_files(self, path):
+        with open(self.output_dir + self.computer_name + '_startup_files' + self.rand_ext, 'wb') as output:
+            csv_writer = get_csv_writer(output)
+            write_to_csv(["COMPUTER_NAME", "TYPE", "FILENAME", "USER", "MD5", "SHA1", "SHA256"], csv_writer)
+            for startup_file in self._get_startup_files(path):
+                write_to_csv(startup_file, csv_writer)
+        record_sha256_logs(self.output_dir + self.computer_name + '_startup_files' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
+
+    def _json_get_startup_files(self, path):
+        with open(self.output_dir + self.computer_name + '_startup_files' + self.rand_ext, 'wb') as output:
+            json_writer = get_json_writer(output)
+            header = ["COMPUTER_NAME", "TYPE", "FILENAME", "USER", "MD5", "SHA1", "SHA256"]
+            for startup_file in self._get_startup_files(path):
+                write_to_json(header, startup_file, json_writer)
+            close_json_writer(json_writer)
+        record_sha256_logs(self.output_dir + self.computer_name + '_startup_files' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')

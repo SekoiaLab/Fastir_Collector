@@ -216,7 +216,7 @@ class _FileCatcher(object):
                                   unicode(sha1), unicode(sha256), unicode(mime), unicode(zip_value), unicode(empty),
                                   self._get_url_VT(sha256)], json_writer)
                 close_json_writer(json_writer)
-        record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_Filecatcher' + self.rand_ext,
-                           self.output_dir + '\\' + self.computer_name + '_sha256.log')
+            record_sha256_logs(self.output_dir + '\\' + self.computer_name + '_Filecatcher' + self.rand_ext,
+                               self.output_dir + '\\' + self.computer_name + '_sha256.log')
         if self.zip_file:
             self.zip_file.close()

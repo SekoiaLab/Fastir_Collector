@@ -25,8 +25,7 @@ class _EventLogs(object):
         try:
             win32evtlog.EvtExportLog(logtype,
                                      self.output_dir + '\\evt\\' + self.computer_name + '_' + logtype.replace('/', '_')
-                                     + '.evtx',
-                                     1)
+                                     + '.evtx', 1)
         except win32evtlog.error:
             self.logger.error('Error while processing evtx : ' + logtype)
 
@@ -89,7 +88,6 @@ class _EventLogs(object):
                     self._list_evt_vista(server, logtype)
 
     def _json_event_logs(self, is_win_xp):
-        """Prints the event logs in a csv, the called method is different for WinXP and lower"""
         server = None  # name of the target computer to get event logs, None to get logs from current computer
         if self.destination == 'local':
             with open(self.output_dir + '\\' + self.computer_name + '_evts' + self.rand_ext, 'wb') as fw:

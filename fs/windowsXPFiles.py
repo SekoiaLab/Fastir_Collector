@@ -6,6 +6,7 @@ from fs import _FS
 class WindowsXPFiles(_FS):
     def __init__(self, params):
         super(WindowsXPFiles, self).__init__(params)
+        self.userprofile = params['USERPROFILE']
 
     def __list_named_pipes(self):
         return super(WindowsXPFiles, self)._list_named_pipes()
@@ -15,7 +16,7 @@ class WindowsXPFiles(_FS):
 
     def _firefox_history(self):
         return super(WindowsXPFiles, self)._firefox_history(
-            '\\Documents and Settings\\*\\Application Data\\Mozilla\\Firefox\\Profiles\\*.default\places.sqlite')
+            '\\Documents and Settings\\*\\Application Data\\Mozilla\\Firefox\\Profiles\\*.default\\places.sqlite')
 
     def csv_print_list_named_pipes(self):
         super(WindowsXPFiles, self)._csv_list_named_pipes(self._list_named_pipes())
@@ -24,18 +25,20 @@ class WindowsXPFiles(_FS):
         super(WindowsXPFiles, self)._csv_windows_prefetch(self._list_windows_prefetch())
 
     def csv_skype_history(self):
-        super(WindowsXPFiles, self)._skype_history(['Application Data\Skype'])
+        super(WindowsXPFiles, self)._skype_history(['Application Data\\Skype'])
 
     def csv_ie_history(self):
-        super(WindowsXPFiles, self)._ie_history(['Local Settings\*\History.IE5'])
+        super(WindowsXPFiles, self)._ie_history(['Local Settings\\*\\History.IE5'])
 
     def csv_firefox_downloads(self):
         super(WindowsXPFiles, self)._firefox_downloads(
-            ['Application Data\Mozilla\Firefox\Profiles\*.default\downloads.sqlite'])
+            ['Application Data\\Mozilla\\Firefox\\Profiles\\*.default\\downloads.sqlite'])
 
     def csv_firefox_history(self):
         super(WindowsXPFiles, self)._csv_firefox_history(self._firefox_history())
 
+    def csv_get_startup_files(self):
+        super(WindowsXPFiles, self)._csv_get_startup_files(self.userprofile + '\\*\\Start Menu\\Programs\\Startup\\*')
 
     def json_print_list_named_pipes(self):
         super(WindowsXPFiles, self)._json_list_named_pipes(self._list_named_pipes())
@@ -44,14 +47,17 @@ class WindowsXPFiles(_FS):
         super(WindowsXPFiles, self)._json_windows_prefetch(self._list_windows_prefetch())
 
     def json_skype_history(self):
-        super(WindowsXPFiles, self)._skype_history(['Application Data\Skype'])
+        super(WindowsXPFiles, self)._skype_history(['Application Data\\Skype'])
 
     def json_ie_history(self):
-        super(WindowsXPFiles, self)._ie_history(['Local Settings\*\History.IE5'])
+        super(WindowsXPFiles, self)._ie_history(['Local Settings\\*\\History.IE5'])
 
     def json_firefox_downloads(self):
         super(WindowsXPFiles, self)._firefox_downloads(
-            ['Application Data\Mozilla\Firefox\Profiles\*.default\downloads.sqlite'])
+            ['Application Data\\Mozilla\\Firefox\\Profiles\\*.default\\downloads.sqlite'])
 
     def json_firefox_history(self):
         super(WindowsXPFiles, self)._json_firefox_history(self._firefox_history())
+
+    def json_get_startup_files(self):
+        super(WindowsXPFiles, self)._json_get_startup_files(self.userprofile + '\\*\\Start Menu\\Programs\\Startup\\*')
