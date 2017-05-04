@@ -1,7 +1,7 @@
 from __future__ import unicode_literals
 import codecs
 from utils.utils import convert_windate, dosdate, get_csv_writer, get_json_writer, write_list_to_json, write_dict_json,\
-    write_list_to_csv, process_hashes, close_json_writer
+    write_list_to_csv, process_hashes, close_json_writer, record_sha256_logs
 import registry_obj
 from win32com.shell import shell
 import struct
@@ -517,36 +517,43 @@ class _Reg(object):
 
     def _json_networks_list(self, key):
         if self.destination == 'local':
-            with open(os.path.join(self.output_dir, '%s_network_list%s' % (self.computer_name, self.rand_ext)), 'wb') as output:
+            with open(self.output_dir + self.computer_name + '_network_list' + self.rand_ext, 'wb') as output:
                 json_writer = get_json_writer(output)
                 result = self._get_network_list(key)
                 for v in result.values():
                     json_writer.dump_json(v)
                 close_json_writer(json_writer)
+        record_sha256_logs(self.output_dir + self.computer_name + '_network_list' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _csv_networks_list(self, key):
-        with open(os.path.join(self.output_dir, '%s_network_list%s' % (self.computer_name, self.rand_ext)),
-                  'wb') as output:
+        with open(self.output_dir + self.computer_name + '_network_list' + self.rand_ext, 'wb') as output:
             csv_writer = get_csv_writer(output)
             network_list_result = self._get_network_list(key)
             arr_data = [v.values() for v in network_list_result.values()]
             arr_data.insert(0, network_list_result.values()[0].keys())
             write_list_to_csv(arr_data, csv_writer)
+        record_sha256_logs(self.output_dir + self.computer_name + '_network_list' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _csv_user_assist(self, is_win7_or_further):
-        with open(self.output_dir + "\\" + self.computer_name + "_user_assist" + self.rand_ext, "wb") as output:
+        with open(self.output_dir + self.computer_name + "_user_assist" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_user_assist(is_win7_or_further), csv_writer)
+        record_sha256_logs(self.output_dir + self.computer_name + '_user_assist' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_user_assist(self, is_win7_or_further):
         if self.destination == 'local':
-            with open(self.output_dir + "\\" + self.computer_name + "_user_assist" + self.rand_ext, "wb") as output:
+            with open(self.output_dir + self.computer_name + "_user_assist" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_user_assist(is_win7_or_further), json_writer)
+        record_sha256_logs(self.output_dir + self.computer_name + '_user_assist' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _get_files_and_hashes(self, csv_files):
         csv_files_transform = []
-        arch = _Archives(os.path.join(self.output_dir, self.computer_name + '_autoruns.zip'), self.logger)
+        arch = _Archives(self.output_dir + self.computer_name + '_autoruns.zip', self.logger)
         for COMPUTER_NAME, TYPE, LAST_WRITE_TIME, HIVE, KEY_PATH, ATTR_NAME, REG_TYPE, ATTR_TYPE, ATTR_DATA in csv_files:
             m = re.match(regex_patern_path, ATTR_DATA)
             md5 = sha1 = sha256 = 'N\/A'
@@ -590,15 +597,19 @@ class _Reg(object):
         return to_csv_list
 
     def _csv_open_save_mru(self, str_opensave_mru):
-        with open(self.output_dir + "\\" + self.computer_name + "_opensaveMRU" + self.rand_ext, "wb") as output:
+        with open(self.output_dir + self.computer_name + "_opensaveMRU" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_open_save_mru(str_opensave_mru), csv_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_opensaveMRU' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_open_save_mru(self, str_opensave_mru):
         if self.destination == 'local':
-            with open(self.output_dir + "\\" + self.computer_name + "_opensaveMRU" + self.rand_ext, "wb") as output:
+            with open(self.output_dir + self.computer_name + "_opensaveMRU" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_open_save_mru(str_opensave_mru), json_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_opensaveMRU' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def __get_powerpoint_mru(self, str_powerpoint_mru):
         """Extracts PowerPoint user mru"""
@@ -623,15 +634,19 @@ class _Reg(object):
         return to_csv_list
 
     def _csv_powerpoint_mru(self, str_powerpoint_mru):
-        with open(self.output_dir + "\\" + self.computer_name + "_powerpointMRU" + self.rand_ext, "wb") as output:
+        with open(self.output_dir + self.computer_name + "_powerpointMRU" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_powerpoint_mru(str_powerpoint_mru), csv_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_powerpointMRU' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_powerpoint_mru(self, str_powerpoint_mru):
         if self.destination == 'local':
-            with open(self.output_dir + "\\" + self.computer_name + "_powerpointMRU" + self.rand_ext, "wb") as output:
+            with open(self.output_dir + self.computer_name + "_powerpointMRU" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_powerpoint_mru(str_powerpoint_mru), json_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_powerpointMRU' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def __get_registry_services(self):
         self.logger.info("Extracting services")
@@ -643,16 +658,20 @@ class _Reg(object):
 
     def csv_registry_services(self):
         """Extracts services"""
-        with open(self.output_dir + "\\" + self.computer_name + "_registry_services" + self.rand_ext, "wb") as output:
+        with open(self.output_dir + self.computer_name + "_registry_services" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_registry_services(), csv_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_registry_services' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def json_registry_services(self):
         if self.destination == 'local':
-            with open(self.output_dir + "\\" + self.computer_name + "_registry_services" + self.rand_ext,
+            with open(self.output_dir + self.computer_name + "_registry_services" + self.rand_ext,
                       "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_registry_services(), json_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_registry_services' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def __get_recents_docs(self):
         """Extracts information about recently opened files saved location and opened date"""
@@ -678,15 +697,19 @@ class _Reg(object):
         return to_csv_list
 
     def csv_recent_docs(self):
-        with open(self.output_dir + "\\" + self.computer_name + "_recent_docs" + self.rand_ext, "wb") as output:
+        with open(self.output_dir + self.computer_name + "_recent_docs" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_recents_docs(), csv_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_recent_docs' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def json_recent_docs(self):
         if self.destination == 'local':
-            with open(self.output_dir + "\\" + self.computer_name + "_recent_docs" + self.rand_ext, "wb") as output:
+            with open(self.output_dir + self.computer_name + "_recent_docs" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_recents_docs(), json_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_recent_docs' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def __get_install_folder(self):
         """Extracts information about folders which are created at installation"""
@@ -698,16 +721,20 @@ class _Reg(object):
         return to_csv_list
 
     def csv_installer_folder(self):
-        with open(self.output_dir + "\\" + self.computer_name + "_installer_folder" + self.rand_ext, "wb") as output:
+        with open(self.output_dir + self.computer_name + "_installer_folder" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_install_folder(), csv_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_installer_folder' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def json_installer_folder(self):
         if self.destination == 'local':
-            with open(self.output_dir + "\\" + self.computer_name + "_installer_folder" + self.rand_ext,
+            with open(self.output_dir + self.computer_name + "_installer_folder" + self.rand_ext,
                       "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_install_folder(), json_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_installer_folder' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def __get_shell_bags(self):
         """
@@ -760,15 +787,19 @@ class _Reg(object):
         return to_csv_list
 
     def csv_shell_bags(self):
-        with open(self.output_dir + "\\" + self.computer_name + "_shellbags" + self.rand_ext, "wb") as output:
+        with open(self.output_dir + self.computer_name + "_shellbags" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_shell_bags(), csv_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_shellbags' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def json_shell_bags(self):
         if self.destination == 'local':
-            with open(self.output_dir + "\\" + self.computer_name + "_shellbags" + self.rand_ext, "wb") as output:
+            with open(self.output_dir + self.computer_name + "_shellbags" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_shell_bags(), json_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_shellbags' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def __get_startup_programs(self):
         """Extracts programs running at startup from various keys"""
@@ -817,15 +848,19 @@ class _Reg(object):
         return to_csv_list
 
     def csv_startup_programs(self):
-        with open(self.output_dir + "\\" + self.computer_name + "_startup" + self.rand_ext, "wb") as output:
+        with open(self.output_dir + self.computer_name + "_startup" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_startup_programs(), csv_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_startup' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def json_startup_programs(self):
         if self.destination == 'local':
-            with open(self.output_dir + "\\" + self.computer_name + "_startup" + self.rand_ext, "wb") as output:
+            with open(self.output_dir + self.computer_name + "_startup" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_startup_programs(), json_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_startup' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def __get_installed_components(self):
         """
@@ -841,17 +876,21 @@ class _Reg(object):
         return to_csv_list
 
     def csv_installed_components(self):
-        with open(self.output_dir + "\\" + self.computer_name + "_installed_components" + self.rand_ext,
+        with open(self.output_dir + self.computer_name + "_installed_components" + self.rand_ext,
                   "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_installed_components(), csv_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_installed_components' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def json_installed_components(self):
         if self.destination == 'local':
-            with open(self.output_dir + "\\" + self.computer_name + "_installed_components" + self.rand_ext,
+            with open(self.output_dir + self.computer_name + "_installed_components" + self.rand_ext,
                       'wb') as ouput:
                 json_writer = get_json_writer(ouput)
                 write_list_to_json(self.__get_installed_components(), json_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_installed_components' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def __get_winlogon_values(self):
         """
@@ -867,15 +906,19 @@ class _Reg(object):
         return to_csv_list
 
     def csv_winlogon_values(self):
-        with open(self.output_dir + "\\" + self.computer_name + "_winlogon_values" + self.rand_ext, "wb") as output:
+        with open(self.output_dir + self.computer_name + "_winlogon_values" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_winlogon_values(), csv_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_winlogon_values' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def json_winlogon_values(self):
         if self.destination == 'local':
-            with open(self.output_dir + "\\" + self.computer_name + "_winlogon_values" + self.rand_ext, "wb") as output:
+            with open(self.output_dir + self.computer_name + "_winlogon_values" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_winlogon_values(), json_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_winlogon_values' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def __get_windows_values(self):
         """
@@ -893,15 +936,19 @@ class _Reg(object):
         return to_csv_list
 
     def csv_windows_values(self):
-        with open(self.output_dir + "\\" + self.computer_name + "_windows_values" + self.rand_ext, "wb") as output:
+        with open(self.output_dir + self.computer_name + "_windows_values" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_windows_values(), csv_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_windows_values' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def json_windows_value(self):
         if self.destination == 'local':
-            with open(self.output_dir + "\\" + self.computer_name + "_windows_values" + self.rand_ext, "wb") as output:
+            with open(self.output_dir + self.computer_name + "_windows_values" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_windows_values(), json_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_windows_values' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def __get_usb_history(self):
         """Extracts information about USB devices that have been connected since the system installation"""
@@ -924,15 +971,19 @@ class _Reg(object):
         return to_csv_list
 
     def csv_usb_history(self):
-        with open(self.output_dir + "\\" + self.computer_name + "_USBHistory" + self.rand_ext, "wb") as output:
+        with open(self.output_dir + self.computer_name + "_USBHistory" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_usb_history(), csv_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_USBHistory' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def json_usb_history(self):
         if self.destination == 'local':
-            with open(self.output_dir + "\\" + self.computer_name + "_USBHistory" + self.rand_ext, "wb") as output:
+            with open(self.output_dir + self.computer_name + "_USBHistory" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_usb_history(), json_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_USBHistory' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def __get_run_mru_start(self):
         """Extracts run MRU, containing the last 26 oommands executed using the RUN command"""
@@ -944,15 +995,19 @@ class _Reg(object):
         return to_csv_list
 
     def csv_run_mru_start(self):
-        with open(self.output_dir + "\\" + self.computer_name + "_run_MRU_start" + self.rand_ext, "wb") as output:
+        with open(self.output_dir + self.computer_name + "_run_MRU_start" + self.rand_ext, "wb") as output:
             csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_run_mru_start(), csv_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_run_MRU_start' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def json_run_mru_start(self):
         if self.destination == 'local':
-            with open(self.output_dir + "\\" + self.computer_name + "_run_MRU_start" + self.rand_ext, "wb") as output:
+            with open(self.output_dir + self.computer_name + "_run_MRU_start" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
                 write_list_to_json(self.__get_run_mru_start(), json_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_run_MRU_start' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def __get_custom_registry_keys(self):
         """
@@ -981,18 +1036,22 @@ class _Reg(object):
             return to_csv_list
 
     def csv_custom_registry_keys(self):
-        with open(self.output_dir + "\\" + self.computer_name + "_custom_registry_keys" + self.rand_ext,
+        with open(self.output_dir + self.computer_name + "_custom_registry_keys" + self.rand_ext,
                   "wb") as output:
             csv_writer = get_csv_writer(output)
             to_csv_list = self.__get_custom_registry_keys()
             if to_csv_list:
                 write_list_to_csv(to_csv_list, csv_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_custom_registry_keys' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
 
     def json_custom_registry_keys(self):
         if self.destination == 'local':
-            with open(self.output_dir + "\\" + self.computer_name + "_custom_registry_keys" + self.rand_ext,
+            with open(self.output_dir + self.computer_name + "_custom_registry_keys" + self.rand_ext,
                       "wb") as output:
                 to_json_list = self.__get_custom_registry_keys()
                 if to_json_list:
                     json_writer = get_json_writer(output)
                     write_list_to_json(to_json_list, json_writer)
+            record_sha256_logs(self.output_dir + self.computer_name + '_custom_registry_keys' + self.rand_ext,
+                               self.output_dir + self.computer_name + '_sha256.log')
