@@ -41,6 +41,7 @@ Packages List and Artefacts:
     * Named Pipes
     * Prefetch
     * Recycle-bin
+    * Startup Directories
 
   * health
     * ARP Table

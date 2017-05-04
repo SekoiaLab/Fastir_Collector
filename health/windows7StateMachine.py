@@ -77,10 +77,10 @@ class Windows7StateMachine(_Statemachine):
         super(Windows7StateMachine, self)._csv_list_kb(self._list_kb())
 
     def csv_list_scheduled_jobs(self):
-        super(Windows7StateMachine, self)._csv_list_scheduled_jobs()
+        super(Windows7StateMachine, self)._csv_list_scheduled_jobs(True)
 
     def json_list_scheduled_jobs(self):
-        super(Windows7StateMachine, self)._json_list_scheduled_jobs()
+        super(Windows7StateMachine, self)._json_list_scheduled_jobs(True)
 
     def json_list_drives(self):
         super(Windows7StateMachine, self)._json_list_drives(self._list_drives())

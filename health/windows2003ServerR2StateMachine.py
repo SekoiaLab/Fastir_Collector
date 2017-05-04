@@ -121,10 +121,10 @@ class Windows2003ServerR2StateMachine(_Statemachine):
         super(Windows2003ServerR2StateMachine, self)._csv_list_kb(self._list_kb())
 
     def csv_list_scheduled_jobs(self):
-        super(Windows2003ServerR2StateMachine, self)._csv_list_scheduled_jobs()
+        super(Windows2003ServerR2StateMachine, self)._csv_list_scheduled_jobs(True)
 
     def json_list_scheduled_jobs(self):
-        super(Windows2003ServerR2StateMachine, self)._json_list_scheduled_jobs()
+        super(Windows2003ServerR2StateMachine, self)._json_list_scheduled_jobs(True)
 
     def json_list_drives(self):
         super(Windows2003ServerR2StateMachine, self)._json_list_drives(self._list_drives())

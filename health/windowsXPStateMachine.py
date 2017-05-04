@@ -121,10 +121,10 @@ class WindowsXPStateMachine(_Statemachine):
         super(WindowsXPStateMachine, self)._csv_list_kb(self._list_kb())
 
     def csv_list_scheduled_jobs(self):
-        super(WindowsXPStateMachine, self)._csv_list_scheduled_jobs()
+        super(WindowsXPStateMachine, self)._csv_list_scheduled_jobs(True)
 
     def json_list_scheduled_jobs(self):
-        super(WindowsXPStateMachine, self)._json_list_scheduled_jobs()
+        super(WindowsXPStateMachine, self)._json_list_scheduled_jobs(True)
 
     def json_list_drives(self):
         super(WindowsXPStateMachine, self)._json_list_drives(self._list_drives())
