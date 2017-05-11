@@ -73,7 +73,7 @@ class RegistryKey(object):
         for i in xrange(self.get_number_of_sub_keys()):
             l.append(EnumKey(self.key, i))
         return l
-    
+
     def get_number_of_sub_keys(self):
         return QueryInfoKey(self.key)[0]
 
@@ -218,6 +218,23 @@ class RegfValue(object):
 
     def get_path(self):
         return self.path
+
+    def get_data(self):
+        reg_type = self.value.get_type()
+        if reg_type == _winreg.REG_DWORD:
+            return self.value.get_data_as_integer()
+        elif reg_type == _winreg.REG_DWORD_LITTLE_ENDIAN:
+            return self.value.get_data_as_integer()
+        elif reg_type == _winreg.REG_DWORD_BIG_ENDIAN:
+            return self.value.get_data_as_integer()
+        elif reg_type == _winreg.REG_SZ:
+            return self.value.get_data_as_string()
+        elif reg_type == _winreg.REG_EXPAND_SZ:
+            return self.value.get_data_as_string()
+        elif reg_type == _winreg.REG_LINK:
+            return self.value.get_data_as_string()
+
+        return self.value.get_data()
 
     def get_full_path(self):
         return self.path + "\\" + self.get_name()

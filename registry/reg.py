@@ -7,6 +7,7 @@ from win32com.shell import shell
 import struct
 import construct
 import StringIO
+import string
 import os
 from csv import reader
 from utils.vss import _VSS
@@ -558,7 +559,7 @@ class _Reg(object):
             m = re.match(regex_patern_path, ATTR_DATA)
             md5 = sha1 = sha256 = 'N\/A'
             if m:
-                path = m.group(0).split('/')[0].strip()
+                path = m.group(0).split('/')[0].strip(string.whitespace + '"')
                 if os.path.isfile(path):
                     if self.vss:
                         path = self.vss._return_root() + os.path.splitdrive(path)[1]
@@ -1027,7 +1028,7 @@ class _Reg(object):
                     if hive in ("HKLM", "HKEY_LOCAL_MACHINE"):
                         self._generate_hklm_csv_list(to_csv_list, "custom_registry_key", path,
                                                      is_recursive=self.registry_recursive)
-                    elif hive in ("HKU", "HKEY_USERS"):
+                    elif hive in ("HKCU", "HKU", "HKEY_USERS"):
                         self._generate_hku_csv_list(to_csv_list, "custom_registry_key", path,
                                                     is_recursive=self.registry_recursive)
                     else:  # error
