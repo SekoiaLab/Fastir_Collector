@@ -406,7 +406,7 @@ class _Reg(object):
             if key_data:
                 key_data.prepend_path_with_sid(sid)
                 construct_list_from_key(hive_list, key_data, is_recursive)
-        return hive_list
+        return list(set(hive_list))
 
     def _get_list_from_registry_key(self, hive, key_path, is_recursive=True, is_usrclass=False):
         """
