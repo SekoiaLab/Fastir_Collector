@@ -30,7 +30,8 @@ in x64.
 - `./fastIR_x64.exe --packages dump --dump mft` to extract MFT
 - `./fastIR_x64.exe --packages all --output_dir your_output_dir` to set the directory output
 (by default `./output/`)
-- `./fastIR_x64.exe --profile you_file_profile` to set your own profile extraction
+- `./fastIR_x64.exe --profile you_file_profile` to set your own extraction profile. Documentation to
+create your own profile can be found in the [wiki](https://github.com/SekoiaLab/Fastir_Collector/wiki/Create-a-profile)
 
 ## Packages
 Packages List and Artefacts:
