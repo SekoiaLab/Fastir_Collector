@@ -245,10 +245,11 @@ def parse_command_line():
     parser.add_argument("--packages", dest="packages",
                         help=("List of packages all,memory,registry,evt,fs,health. And advanced packages: filecatcher,"
                               "dump \r\n use: --packages all or --packages fs,memory"))
-    parser.add_argument("--output_dir", dest="output_dir", help="Directory path for CSV outputs")
+    parser.add_argument("--output_dir", dest="output_dir", help="Output directory path")
+    parser.add_argument("--output_type", dest="output_type", help="Specify output format (json or csv)")
     parser.add_argument("--dump", dest="dump",
                         help="use: --dump ram if you want to dump ram. To list dump functionalities, --dump list")
-    parser.add_argument("--profile", dest="profile", help="--profile yourfile.conf. The filepath must be absolute")
+    parser.add_argument("--profile", dest="profile", help="--profile path\\to\\yourprofile.conf")
     parser.add_argument("--homedrive", dest="homedrive", help="--homedrive drive: to manually set HOMEDRIVE for FastIR")
     args = parser.parse_args()
 
@@ -287,6 +288,9 @@ def set_command_line_options(param_options, args):
                 param_options[option] = [p.lower() for p in list(set(getattr(args, option).split(",")))]
             else:
                 param_options[option] = getattr(args, option)
+
+    if args.output_type is not None and param_options['rand_ext'] in ('.json', '.csv'):
+        param_options['rand_ext'] = '.' + args.output_type
 
     return param_options
 
