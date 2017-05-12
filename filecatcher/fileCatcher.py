@@ -41,7 +41,7 @@ class _FileCatcher(object):
     def _list_files(self):
         pe = None
         yara_matching = None
-        self.logger.warn('Dirs: ' + str(self.dirs) + 'to catch')
+        self.logger.warn('Dirs: ' + str(self.dirs) + ' to catch')
         for directory in self.dirs:
             shadow_directory = self._changeroot(directory)
             lst = _ListFiles(shadow_directory, self.logger)

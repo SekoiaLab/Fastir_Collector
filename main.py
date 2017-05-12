@@ -90,7 +90,7 @@ def set_environment_options(param_options):
 
     if "fs" in param_options:
         user_env_var = ["TEMP", "USERPROFILE", "APPDATA", "LOCALAPPDADATA", "TMP"]
-        fs = []
+        fs = set()
         for entry in param_options["fs"].split(","):
             d = entry.split('|')[0]
             depth = entry.split('|')[1]
@@ -104,19 +104,19 @@ def set_environment_options(param_options):
                         path = path.replace(username, "*")
 
                         for p in glob.glob(path):
-                            fs.append(p + '|' + depth)
+                            fs.add(p + '|' + depth)
                     else:
                         try:
-                            fs.append(d.replace("%" + d[1:len(d) - 1] + "%", os.environ[d[1:len(d) - 1]]) + '|' + depth)
+                            fs.add(d.replace("%" + d[1:len(d) - 1] + "%", os.environ[d[1:len(d) - 1]]) + '|' + depth)
                         except KeyError:
                             sys.stderr.write("Environment variable '%s' doesn't exist\n" % d)
                 else:
                     try:
-                        fs.append(d.replace("%" + env_var + "%", os.environ[env_var]) + '|' + depth)
+                        fs.add(d.replace("%" + env_var + "%", os.environ[env_var]) + '|' + depth)
                     except KeyError:
                         sys.stderr.write("Environment variable '%s' doesn't exist\n" % d)
             elif os.path.isdir(d):
-                fs.append(d + '|' + depth)
+                fs.add(d + '|' + depth)
             else:
                 sys.stderr.write("Could not find directory '%s'\n" % d)
         param_options["fs"] = fs
