@@ -12,7 +12,7 @@ custom_registry_keys="HKCU\SOFTWARE\Locky"
 registry_recursive=False
 get_autoruns=True
 [output]
-type=json
+type=csv
 destination=local
 dir=output
 [filecatcher]

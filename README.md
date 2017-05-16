@@ -4,6 +4,9 @@
 This tool collects different artefacts on live Windows and records the results in csv or json files. With the analyses
 of these artefacts, an early compromission can be detected.
 
+## Downloads
+Binaries can be found in the [release page](https://github.com/SekoiaLab/Fastir_Collector/releases) of this project.
+
 ## Requirements
 - pywin32
 - python WMI
