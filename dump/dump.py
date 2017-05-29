@@ -155,6 +155,9 @@ class _Dump(object):
         finally:
             stop_and_delete_driver_service(hSvc)
 
+    def json_export_ram(self):
+        self.csv_export_ram()
+
     def json_mbr(self):
         self.csv_mbr()
 

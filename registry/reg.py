@@ -943,7 +943,7 @@ class _Reg(object):
             record_sha256_logs(self.output_dir + self.computer_name + '_windows_values' + self.rand_ext,
                                self.output_dir + self.computer_name + '_sha256.log')
 
-    def json_windows_value(self):
+    def json_windows_values(self):
         if self.destination == 'local':
             with open(self.output_dir + self.computer_name + "_windows_values" + self.rand_ext, "wb") as output:
                 json_writer = get_json_writer(output)
