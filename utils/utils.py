@@ -215,6 +215,7 @@ def convert_windate(timestamp):
         return 0
 
 
+# Code from https://github.com/williballenthin/python-evtx/blob/master/Evtx/BinaryParser.py#L80
 def dosdate(_dosdate, _dostime):
     """
     _dosdate: 2 bytes, little endian.

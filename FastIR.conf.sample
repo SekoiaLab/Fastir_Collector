@@ -31,7 +31,7 @@ limit_days=unlimited
 pe
 yara
 [pe]
-pe_mime_type=application/x-ms-pe;application/x-ms-dos-executable;application/x-ms-pe;application/x-dosexec;application/x-executable, statically linked, stripped
+pe_mime_type=application/x-ms-pe;application/x-ms-dos-executable;application/x-dosexec;application/x-executable, statically linked, stripped
 filtered_certificates=True
 cert_filtered_issuer=issuer;O=Microsoft Corporation|Microsoft Time-Stamp PCA|Microsoft Time-Stamp PCA Microsoft Windows Verification PCA
 cert_filtered_subject=subject;O=Microsoft Corporation|Microsoft Time-Stamp Service|Microsoft Time-Stamp Service Microsoft Windows

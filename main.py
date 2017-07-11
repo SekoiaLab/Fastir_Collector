@@ -1,28 +1,30 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-import ConfigParser
 import argparse
-from datetime import datetime
+import ctypes
 import glob
 import inspect
 import logging
 import multiprocessing
 import os
 import platform
+import random
 import re
+import string
 import sys
 import traceback
-import yaml
-from utils.utils import mount_share, unmount_share, get_os_version, change_char_set_os_environ
-from utils.vss import _VSS
+from datetime import datetime
+
 import wmi
+import yaml
+
 import factory.factory as factory
-from settings import USERS_FOLDER, EXTRACT_DUMP
-import ctypes
 import settings
-import random
-import string
+from settings import EXTRACT_DUMP, USERS_FOLDER
+from utils.conf import CustomConf
+from utils.utils import change_char_set_os_environ, get_os_version, mount_share, unmount_share
+from utils.vss import _VSS
 
 
 def set_logger(param_options):
@@ -127,10 +129,9 @@ def set_environment_options(param_options):
     return param_options
 
 
-def profile_used(path, param_options):
-    file_conf = path
-    config = ConfigParser.ConfigParser(allow_no_value=True)
-    config.readfp(open(file_conf))
+def profile_used(paths, param_options):
+    config = CustomConf(paths)
+
     param_options["packages"] = [p.lower() for p in config.get("profiles", "packages").split(",")]
 
     param_options["output_type"] = config.get("output", "type")
@@ -184,9 +185,9 @@ def profile_used(path, param_options):
         param_options['get_autoruns'] = False
 
     if config.has_section('modules'):
-        for module in config.options('modules'):
-            for module_option in config.options(module):
-                param_options[module_option] = config.get(module, module_option)
+        for mod in config.options('modules'):
+            for module_option in config.options(mod):
+                param_options[module_option] = config.get(mod, module_option)
     if config.has_section('extension'):
         if config.has_option('extension', 'random'):
             if yaml.load(config.get("extension", "random")):
@@ -261,23 +262,27 @@ def parse_command_line():
 
 
 def parse_config_file(config_file, param_options):
-    """Parse config file specified in argument, or default config file (FastIR.conf)"""
-    # If no config_file was specified, fallback to bundled config
-    if not config_file:
-        config_file = "FastIR.conf"
-        # If app is frozen with pyinstaller, look for temporary file path
-        if hasattr(sys, "frozen"):
-            config_file = os.path.join(sys._MEIPASS, config_file)
-    else:
-        # If a config_file was specified but doesn"t exist, tell the user and quit
+    """Verify that if a conf file is given as a parameter it exists, and checks
+    if the app is frozen (i.e. "compiled") or  not, to include the right path."""
+
+    config_files = list()
+
+    if config_file:
+        # If a config_file was specified but doesn't exist, tell the user and quit rather than using default conf
         if not os.path.isfile(config_file):
             sys.stderr.write("Error: config file '%s' not found" % config_file)
             sys.exit(1)
+        else:
+            config_files.append(config_file)
 
-    if os.path.isfile(config_file):
-        return profile_used(config_file, param_options)
+    # If app is frozen with pyinstaller, look for temporary file path
+    if hasattr(sys, "frozen"):
+        config_files.append(os.path.join(sys._MEIPASS, 'FastIR.conf'))
     else:
-        return {}
+        # if running from sources, use the conf file in the current directory
+        config_files.append("FastIR.conf")
+
+    return profile_used(config_files, param_options)
 
 
 def set_command_line_options(param_options, args):
