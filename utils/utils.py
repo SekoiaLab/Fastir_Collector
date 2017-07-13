@@ -26,7 +26,7 @@ import json
 import binascii
 
 regex_patern_path = '^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))'
-
+EXCEL_CELL_SIZE = 30000  # real limit is 32767, but 
 
 class UnicodeJsonDumper:
     """
@@ -47,7 +47,7 @@ class UnicodeJsonDumper:
         headers = list_json[0]
         to_write = []
         for entry in list_json[1:]:
-            json_dict = {h:  entry[index] for index, h in enumerate(headers)}
+            json_dict = {h: entry[index] for index, h in enumerate(headers)}
             to_write.append(encode_json_dict(json_dict))
         json.dump(to_write, self.output)
 
@@ -78,12 +78,13 @@ class UnicodeWriter:
     which is encoded in the given encoding.
     """
 
-    def __init__(self, f, dialect=csv.excel, encoding="utf-8", **kwds):
+    def __init__(self, f, excel=False, dialect=csv.excel, encoding="utf-8", **kwds):
         # Redirect output to a queue
         self.queue = cStringIO.StringIO()
         self.writer = csv.writer(self.queue, dialect=dialect, **kwds)
         self.stream = f
         self.encoder = codecs.getincrementalencoder(encoding)()
+        self.excel = excel
 
     def writerow(self, row):
         columns = []
@@ -101,6 +102,15 @@ class UnicodeWriter:
                     columns.append("".join([a for a in s]).encode("utf-8", "ignore"))
             else:
                 columns.append("")
+
+        if self.excel:
+            for index, c in enumerate(columns):
+                if len(c) > EXCEL_CELL_SIZE:
+                    try:
+                        columns[index] = c[:EXCEL_CELL_SIZE] + ' [...]'
+                    except UnicodeDecodeError:
+                        columns[index] = (c[:EXCEL_CELL_SIZE].decode('utf8') + ' [...]').encode('utf8')
+
         self.writer.writerow(columns)
 
         # Fetch UTF-8 output from the queue ...
@@ -420,6 +430,10 @@ def get_json_writer(json_file):
 
 def get_csv_writer(csvfile):
     return UnicodeWriter(csvfile, quoting=csv.QUOTE_ALL)
+
+
+def get_excel_csv_writer(csvfile):
+    return UnicodeWriter(csvfile, excel=True, quoting=csv.QUOTE_ALL)
 
 
 def write_to_csv(arr_data, csv_writer):

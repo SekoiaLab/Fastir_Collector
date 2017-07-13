@@ -3,7 +3,7 @@ import os
 
 from filecatcher.listfiles import _ListFiles
 from settings import VIRUS_TOTAL
-from utils.utils import get_csv_writer, get_json_writer, write_to_csv, write_to_json, close_json_writer, process_size,\
+from utils.utils import get_csv_writer, get_excel_csv_writer, get_json_writer, write_to_csv, write_to_json, close_json_writer, process_size,\
      record_sha256_logs, process_hashes
 from utils.utils_rawstring import sekoiamagic
 import yaml
@@ -22,6 +22,7 @@ class _FileCatcher(object):
         self.size_max = process_size(params['size_max'])
         self.mime_zip = params['mime_zip'].split(';')
         self.computer_name = params['computer_name']
+        self.output_excel = params['output_excel']
         self.output_dir = params['output_dir']
         self.zip = params['zip']
         self.zip_ext_file = params['zip_ext_file'].split(',')
@@ -190,7 +191,10 @@ class _FileCatcher(object):
 
     def _csv_infos_fs(self, files):
         with open(self.output_dir + '\\' + self.computer_name + '_Filecatcher' + self.rand_ext, 'wb') as fw:
-            csv_writer = get_csv_writer(fw)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(fw)
+            else:
+                csv_writer = get_csv_writer(fw)
             write_to_csv(['COMPUTER NAME', 'TYPE', 'DATE', 'PATH', 'MD5', 'SHA1', 'SHA256', 'MIMETYPE', 'ZIP',
                           'EMPTY', 'VT'], csv_writer)
             for f, mime, md5, sha1, sha256, zip_value, datem, empty in files:

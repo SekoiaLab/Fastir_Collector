@@ -137,6 +137,7 @@ def profile_used(paths, param_options):
     param_options["output_type"] = config.get("output", "type")
     param_options["output_destination"] = config.get("output", "destination")
     param_options["output_dir"] = config.get("output", "dir")
+    param_options["output_excel"] = yaml.load(config.get("output", "excel"))
     if config.has_option("output", "share"):
         param_options["output_share"] = config.get("output", "share")
 
@@ -248,6 +249,7 @@ def parse_command_line():
                               "dump \r\n use: --packages all or --packages fs,memory"))
     parser.add_argument("--output_dir", dest="output_dir", help="Output directory path")
     parser.add_argument("--output_type", dest="output_type", help="Specify output format (json or csv)")
+    parser.add_argument("--excel", dest="output_excel", action="store_true", help="When enabled will limit csv fields size at ~30k chars")
     parser.add_argument("--dump", dest="dump",
                         help="use: --dump ram if you want to dump ram. To list dump functionalities, --dump list")
     parser.add_argument("--profile", dest="profile", help="--profile path\\to\\yourprofile.conf")

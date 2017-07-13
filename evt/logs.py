@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 import win32evtlog
-from utils.utils import get_csv_writer, get_json_writer, write_to_csv, write_to_json, close_json_writer
+from utils.utils import get_csv_writer, get_excel_csv_writer, get_json_writer, write_to_csv, write_to_json, close_json_writer
 import datetime
 import os
 
@@ -12,6 +12,7 @@ hevt_to_write = {'Channel': '', 'EventID': '', 'Execution': 'ProcessID', 'Level'
 
 class _EventLogs(object):
     def __init__(self, params):
+        self.output_excel = params['output_excel']
         self.output_dir = params['output_dir']
         self.computer_name = params['computer_name']
         self.logger = params['logger']
@@ -61,7 +62,10 @@ class _EventLogs(object):
         """Prints the event logs in a csv, the called method is different for WinXP and lower"""
         server = None  # name of the target computer to get event logs, None to get logs from current computer
         with open(self.output_dir + '\\' + self.computer_name + '_evts' + self.rand_ext, 'wb') as fw:
-            csv_writer = get_csv_writer(fw)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(fw)
+            else:
+                csv_writer = get_csv_writer(fw)
             write_to_csv(['COMPUTER', 'TYPE', 'SOURCE', 'CATEGORY', 'SOURCE NAME', 'ID', 'EVENT_TYPE', 'LOG'], csv_writer)
             if is_win_xp:
                 for eventCategory, sourceName, eventID, eventType, date, log in self._list_evt_xp(server, 'Security'):

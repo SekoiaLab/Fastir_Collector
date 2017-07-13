@@ -35,7 +35,8 @@ class CustomConf:
         defaults['output'] = {
             'type': 'csv',
             'destination': 'local',
-            'dir': 'output'
+            'dir': 'output',
+            'excel': 'False',
         }
         defaults['filecatcher'] = {
             'all_users': 'True',

@@ -1,6 +1,6 @@
 from __future__ import unicode_literals
 import codecs
-from utils.utils import convert_windate, dosdate, get_csv_writer, get_json_writer, write_list_to_json, write_dict_json,\
+from utils.utils import convert_windate, dosdate, get_csv_writer, get_excel_csv_writer, get_json_writer, write_list_to_json, write_dict_json,\
     write_list_to_csv, process_hashes, close_json_writer, record_sha256_logs
 import registry_obj
 from win32com.shell import shell
@@ -271,6 +271,7 @@ def construct_list_from_key(hive_list, key, is_recursive=True):
 
 class _Reg(object):
     def __init__(self, params):
+        self.output_excel = params["output_excel"]
         if params["output_dir"] and params["computer_name"]:
             self.computer_name = params["computer_name"]
             self.output_dir = params["output_dir"]
@@ -529,7 +530,10 @@ class _Reg(object):
 
     def _csv_networks_list(self, key):
         with open(self.output_dir + self.computer_name + '_network_list' + self.rand_ext, 'wb') as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             network_list_result = self._get_network_list(key)
             arr_data = [v.values() for v in network_list_result.values()]
             arr_data.insert(0, network_list_result.values()[0].keys())
@@ -539,7 +543,10 @@ class _Reg(object):
 
     def _csv_user_assist(self, is_win7_or_further):
         with open(self.output_dir + self.computer_name + "_user_assist" + self.rand_ext, "wb") as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_user_assist(is_win7_or_further), csv_writer)
         record_sha256_logs(self.output_dir + self.computer_name + '_user_assist' + self.rand_ext,
                            self.output_dir + self.computer_name + '_sha256.log')
@@ -599,7 +606,10 @@ class _Reg(object):
 
     def _csv_open_save_mru(self, str_opensave_mru):
         with open(self.output_dir + self.computer_name + "_opensaveMRU" + self.rand_ext, "wb") as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_open_save_mru(str_opensave_mru), csv_writer)
             record_sha256_logs(self.output_dir + self.computer_name + '_opensaveMRU' + self.rand_ext,
                                self.output_dir + self.computer_name + '_sha256.log')
@@ -636,7 +646,10 @@ class _Reg(object):
 
     def _csv_powerpoint_mru(self, str_powerpoint_mru):
         with open(self.output_dir + self.computer_name + "_powerpointMRU" + self.rand_ext, "wb") as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_powerpoint_mru(str_powerpoint_mru), csv_writer)
             record_sha256_logs(self.output_dir + self.computer_name + '_powerpointMRU' + self.rand_ext,
                                self.output_dir + self.computer_name + '_sha256.log')
@@ -660,7 +673,10 @@ class _Reg(object):
     def csv_registry_services(self):
         """Extracts services"""
         with open(self.output_dir + self.computer_name + "_registry_services" + self.rand_ext, "wb") as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_registry_services(), csv_writer)
             record_sha256_logs(self.output_dir + self.computer_name + '_registry_services' + self.rand_ext,
                                self.output_dir + self.computer_name + '_sha256.log')
@@ -699,7 +715,10 @@ class _Reg(object):
 
     def csv_recent_docs(self):
         with open(self.output_dir + self.computer_name + "_recent_docs" + self.rand_ext, "wb") as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_recents_docs(), csv_writer)
             record_sha256_logs(self.output_dir + self.computer_name + '_recent_docs' + self.rand_ext,
                                self.output_dir + self.computer_name + '_sha256.log')
@@ -723,7 +742,10 @@ class _Reg(object):
 
     def csv_installer_folder(self):
         with open(self.output_dir + self.computer_name + "_installer_folder" + self.rand_ext, "wb") as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_install_folder(), csv_writer)
             record_sha256_logs(self.output_dir + self.computer_name + '_installer_folder' + self.rand_ext,
                                self.output_dir + self.computer_name + '_sha256.log')
@@ -789,7 +811,10 @@ class _Reg(object):
 
     def csv_shell_bags(self):
         with open(self.output_dir + self.computer_name + "_shellbags" + self.rand_ext, "wb") as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_shell_bags(), csv_writer)
             record_sha256_logs(self.output_dir + self.computer_name + '_shellbags' + self.rand_ext,
                                self.output_dir + self.computer_name + '_sha256.log')
@@ -850,7 +875,10 @@ class _Reg(object):
 
     def csv_startup_programs(self):
         with open(self.output_dir + self.computer_name + "_startup" + self.rand_ext, "wb") as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_startup_programs(), csv_writer)
             record_sha256_logs(self.output_dir + self.computer_name + '_startup' + self.rand_ext,
                                self.output_dir + self.computer_name + '_sha256.log')
@@ -879,7 +907,10 @@ class _Reg(object):
     def csv_installed_components(self):
         with open(self.output_dir + self.computer_name + "_installed_components" + self.rand_ext,
                   "wb") as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_installed_components(), csv_writer)
             record_sha256_logs(self.output_dir + self.computer_name + '_installed_components' + self.rand_ext,
                                self.output_dir + self.computer_name + '_sha256.log')
@@ -908,7 +939,10 @@ class _Reg(object):
 
     def csv_winlogon_values(self):
         with open(self.output_dir + self.computer_name + "_winlogon_values" + self.rand_ext, "wb") as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_winlogon_values(), csv_writer)
             record_sha256_logs(self.output_dir + self.computer_name + '_winlogon_values' + self.rand_ext,
                                self.output_dir + self.computer_name + '_sha256.log')
@@ -938,7 +972,10 @@ class _Reg(object):
 
     def csv_windows_values(self):
         with open(self.output_dir + self.computer_name + "_windows_values" + self.rand_ext, "wb") as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_windows_values(), csv_writer)
             record_sha256_logs(self.output_dir + self.computer_name + '_windows_values' + self.rand_ext,
                                self.output_dir + self.computer_name + '_sha256.log')
@@ -973,7 +1010,10 @@ class _Reg(object):
 
     def csv_usb_history(self):
         with open(self.output_dir + self.computer_name + "_USBHistory" + self.rand_ext, "wb") as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_usb_history(), csv_writer)
             record_sha256_logs(self.output_dir + self.computer_name + '_USBHistory' + self.rand_ext,
                                self.output_dir + self.computer_name + '_sha256.log')
@@ -997,7 +1037,10 @@ class _Reg(object):
 
     def csv_run_mru_start(self):
         with open(self.output_dir + self.computer_name + "_run_MRU_start" + self.rand_ext, "wb") as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_run_mru_start(), csv_writer)
             record_sha256_logs(self.output_dir + self.computer_name + '_run_MRU_start' + self.rand_ext,
                                self.output_dir + self.computer_name + '_sha256.log')
@@ -1039,7 +1082,10 @@ class _Reg(object):
     def csv_custom_registry_keys(self):
         with open(self.output_dir + self.computer_name + "_custom_registry_keys" + self.rand_ext,
                   "wb") as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             to_csv_list = self.__get_custom_registry_keys()
             if to_csv_list:
                 write_list_to_csv(to_csv_list, csv_writer)

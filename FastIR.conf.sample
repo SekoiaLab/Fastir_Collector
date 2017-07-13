@@ -12,6 +12,7 @@ custom_registry_keys="HKCU\SOFTWARE\Locky"
 registry_recursive=False
 get_autoruns=True
 [output]
+excel=True
 type=csv
 destination=local
 dir=output

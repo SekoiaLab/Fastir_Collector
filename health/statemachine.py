@@ -6,7 +6,7 @@ import subprocess
 import traceback
 import psutil
 from settings import NETWORK_ADAPTATER
-from utils.utils import write_to_output, get_csv_writer, write_to_json, close_json_writer, get_json_writer,\
+from utils.utils import write_to_output, get_csv_writer, get_excel_csv_writer, write_to_json, close_json_writer, get_json_writer,\
      write_list_to_json, write_to_csv, get_terminal_decoded_string, record_sha256_logs, process_md5, process_sha1
 import win32process
 import re
@@ -20,6 +20,7 @@ class _Statemachine(object):
         self.wmi = wmi.WMI()
         self.computer_name = params['computer_name']
         self.output_dir = params['output_dir']
+        self.output_excel = params['output_excel']
         self.systemroot = params['system_root']
         self.logger = params['logger']
         self.rand_ext = params['rand_ext']
@@ -166,7 +167,10 @@ class _Statemachine(object):
     def _csv_list_running_process(self, list_running):
         self.logger.info("Health : Listing running processes")
         with open(self.output_dir + '%s_processes' % self.computer_name + self.rand_ext, 'ab') as fw:
-            csv_writer = get_csv_writer(fw)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(fw)
+            else:
+                csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "COMMAND", "EXEC_PATH"], csv_writer)
             for p in list_running:
                 pid = p[0]
@@ -194,7 +198,10 @@ class _Statemachine(object):
     def _csv_hash_running_process(self, list_running):
         self.logger.info("Health : Hashing running processes")
         with open(self.output_dir + '%s_hash_processes' % self.computer_name + self.rand_ext, 'ab') as fw:
-            csv_writer = get_csv_writer(fw)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(fw)
+            else:
+                csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "EXEC_PATH", "MD5", "SHA1", "CTIME", "MTIME",
                           "ATIME"], csv_writer)
             for p in list_running:
@@ -241,7 +248,10 @@ class _Statemachine(object):
     def _csv_list_share(self, share):
         self.logger.info("Health : Listing shares")
         with open(self.output_dir + '%s_shares' % self.computer_name + self.rand_ext, 'wb') as fw:
-            csv_writer = get_csv_writer(fw)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(fw)
+            else:
+                csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "SHARE_NAME", "SHARE_PATH"], csv_writer)
             for name, path in share:
                 write_to_csv([self.computer_name, 'shares', name, path], csv_writer)
@@ -262,7 +272,10 @@ class _Statemachine(object):
     def _csv_list_drives(self, drives):
         self.logger.info("Health : Listing drives")
         with open(self.output_dir + '%s_list_drives' % self.computer_name + self.rand_ext, 'wb') as fw:
-            csv_writer = get_csv_writer(fw)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(fw)
+            else:
+                csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "FAB", "PARTITIONS", "DISK", "FILESYSTEM"], csv_writer)
             for phCapt, partCapt, logicalCapt, fs in drives:
                 write_to_csv([self.computer_name, 'list_drives', phCapt, partCapt, logicalCapt, fs], csv_writer)
@@ -284,7 +297,10 @@ class _Statemachine(object):
     def _csv_list_network_drives(self, drives):
         self.logger.info("Health : Listing network drives")
         with open(self.output_dir + '%s_list_networks_drives' % self.computer_name + self.rand_ext, 'wb') as fw:
-            csv_writer = get_csv_writer(fw)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(fw)
+            else:
+                csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "DISK", "FILESYSTEM", "PARTITION_NAME"], csv_writer)
             for diskCapt, diskFs, diskPName in drives:
                 write_to_csv([self.computer_name, 'list_networks_drives', diskCapt, diskFs, diskPName], csv_writer)
@@ -306,7 +322,10 @@ class _Statemachine(object):
     def _csv_list_sessions(self, sessions):
         self.logger.info('Health : Listing sessions')
         with open(self.output_dir + '%s_sessions' % self.computer_name + self.rand_ext, 'ab') as fw:
-            csv_writer = get_csv_writer(fw)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(fw)
+            else:
+                csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "LOGON_ID", "AUTH_PACKAGE", "START_TIME", "LOGON_TYPE"], csv_writer)
             for logonID, authenticationPackage, startime, logontype in sessions:
                 write_to_csv([self.computer_name, 'sessions', unicode(logonID),
@@ -333,7 +352,10 @@ class _Statemachine(object):
         file_tasks = self.output_dir + '%s_scheduled_jobs' % self.computer_name + self.rand_ext
         with open(file_tasks, 'wb') as tasks_logs:
             write_to_output('"COMPUTER_NAME","TYPE","TASK_NAME","NEXT_SCHEDULE","STATUS"\r\n', tasks_logs, self.logger)
-            csv_writer = get_csv_writer(tasks_logs)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(tasks_logs)
+            else:
+                csv_writer = get_csv_writer(tasks_logs)
             for line in self._list_scheduled_jobs():
                 write_to_csv([self.computer_name, 'scheduled_jobs'] + line.replace('"', '').split(','), csv_writer)
             if is_at_available:
@@ -364,7 +386,10 @@ class _Statemachine(object):
     def _csv_list_network_adapters(self, ncs):
         self.logger.info('Health : Listing network adapters')
         with open(self.output_dir + '%s_networks_cards' % self.computer_name + self.rand_ext, 'wb') as fw:
-            csv_writer = get_csv_writer(fw)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(fw)
+            else:
+                csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "NETWORK_CARD", "ADAPTER_TYPE", "DESCRIPTION", "MAC_ADDR",
                           "PRODUCT_NAME", "PHYSICAL_ADAPTER", "SPEED", "IPv4", "IPv6", "DHCP_SERVER", "DNS_SERVER",
                           "DATABASE_PATH", "NBTSTAT_VALUE"], csv_writer)
@@ -457,7 +482,10 @@ class _Statemachine(object):
     def _csv_list_arp_table(self, arp):
         self.logger.info('Health : Listing ARP tables')
         with open(self.output_dir + '%s_arp_table' % self.computer_name + self.rand_ext, 'wb') as fw:
-            csv_writer = get_csv_writer(fw)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(fw)
+            else:
+                csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "IP", "MAC_ADDR", "STATUS"], csv_writer)
             for entry in arp:
                 entry.replace('\xff', '')
@@ -492,7 +520,10 @@ class _Statemachine(object):
     def _csv_list_route_table(self, routes):
         self.logger.info('Health : Listing routes tables')
         with open(self.output_dir + '%s_routes_tables' % self.computer_name + self.rand_ext, 'ab') as fw:
-            csv_writer = get_csv_writer(fw)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(fw)
+            else:
+                csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "NAME", "MASK"], csv_writer)
             for ip, mask in routes:
                 write_to_csv([self.computer_name, 'routes_tables', unicode(ip), unicode(mask)], csv_writer)
@@ -514,7 +545,10 @@ class _Statemachine(object):
     def _csv_list_sockets_network(self, connections):
         self.logger.info('Health : Listing sockets networks')
         with open(self.output_dir + '%s_sockets' % self.computer_name + self.rand_ext, 'ab') as fw:
-            csv_writer = get_csv_writer(fw)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(fw)
+            else:
+                csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "PID", "PROCESS_NAME", "LOCAL_ADDR", "SOURCE_PORT", "REMOTE_ADDR",
                           "REMOTE_PORT", "STATUS"], csv_writer)
             for pid, name, local_address, source_port, remote_addr, remote_port, status in connections:
@@ -541,7 +575,10 @@ class _Statemachine(object):
     def _csv_list_services(self, services):
         self.logger.info('Health : Listing services')
         with open(self.output_dir + '%s_services' % self.computer_name + self.rand_ext, 'ab') as fw:
-            csv_writer = get_csv_writer(fw)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(fw)
+            else:
+                csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "CAPTION", "PID", "SERVICE_TYPE", "PATH_NAME", "STATUS", "STATE",
                           "START_MODE"], csv_writer)
             for name, caption, processId, pathName, serviceType, status, state, startMode in services:
@@ -568,7 +605,10 @@ class _Statemachine(object):
     def _csv_list_kb(self, kbs):
         self.logger.info('Health : Listing KB installed on computer')
         with open(self.output_dir + '%s_kb' % self.computer_name + self.rand_ext, 'ab') as fw:
-            csv_writer = get_csv_writer(fw)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(fw)
+            else:
+                csv_writer = get_csv_writer(fw)
             write_to_csv(["COMPUTER_NAME", "TYPE", "CAPTION", "CS_NAME", "FIX_COMMENTS", "HOTFIX_ID", "INSTALL_DATE",
                           "INSTALLED_ON", "NAME", "SERVICE_PACK", "STATUS"], csv_writer)
             for Caption, CSName, FixComments, HotFixID, InstallDate, InstalledOn, Name, ServicePackInEffect, Status in kbs:

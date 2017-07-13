@@ -9,7 +9,7 @@ import traceback
 import ctypes
 import struct
 
-from utils.utils import look_for_outlook_dirs, look_for_files, zip_archive, get_csv_writer, get_json_writer, \
+from utils.utils import look_for_outlook_dirs, look_for_files, zip_archive, get_csv_writer, get_excel_csv_writer, get_json_writer, \
      write_to_csv, write_to_json, close_json_writer, record_sha256_logs, process_hashes
 from registry.registry_obj import get_userprofiles_from_reg
 from utils.utils_rawstring import sekoiamagic
@@ -18,6 +18,7 @@ from win32com.shell import shell, shellcon
 
 class _FS(object):
     def __init__(self, params):
+        self.output_excel = params['output_excel']
         self.userprofiles = None
         self.public = None
         self.systemroot = params['system_root']
@@ -226,7 +227,10 @@ class _FS(object):
 
     def _csv_list_named_pipes(self, pipes):
         with open(self.output_dir + self.computer_name + '_named_pipes' + self.rand_ext, 'wb') as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_to_csv(("COMPUTER_NAME", "TYPE", "NAME"), csv_writer)
             for pipe in pipes:
                 write_to_csv([self.computer_name, 'named_pipes', pipe], csv_writer)
@@ -246,7 +250,10 @@ class _FS(object):
 
     def _csv_windows_prefetch(self, wpref):
         with open(self.output_dir + self.computer_name + '_prefetch' + self.rand_ext, 'wb') as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_to_csv(("COMPUTER_NAME", "TYPE", "FILE", "VERSION", "SIZE", "EXEC_NAME", "CREATE_TIME",
                           "MODIFICATION_TIME", "RUN_COUNT", "START_TIME", "DURATION", "AVERAGE_DURATION",
                           "DLL_LIST"), csv_writer)
@@ -289,7 +296,10 @@ class _FS(object):
     def _csv_firefox_history(self, fhistory):
         with open(self.output_dir + self.computer_name + '_firefox_history' + self.rand_ext, 'wb') as output:
             header = ["COMPUTER_NAME", "TYPE", "TIME", "URL", "USER", "PROFILE"]
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_to_csv(header, csv_writer)
             for time, url, user, profile in fhistory:
                 write_to_csv([self.computer_name, 'firefox_history', time, url, user, profile], csv_writer)
@@ -308,7 +318,10 @@ class _FS(object):
 
     def _csv_chrome_history(self, chistory):
         with open(self.output_dir + self.computer_name + '_chrome_history' + self.rand_ext, 'wb') as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_to_csv(("COMPUTER_NAME", "TYPE", "TIME", "URL", "TITLE", "USER", "PROFILE"), csv_writer)
             for time, url, title, user, profile in chistory:
                 write_to_csv([self.computer_name, 'chrome_history', time, url, title, user, profile], csv_writer)
@@ -330,7 +343,10 @@ class _FS(object):
     def csv_recycle_bin(self):
         """Exports the filenames contained in the recycle bin"""
         with open(self.output_dir + self.computer_name + '_recycle_bin' + self.rand_ext, 'wb') as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_to_csv(("COMPUTER_NAME", "TYPE", "NAME_1", "NAME_2"), csv_writer)
             idl = shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_BITBUCKET)
             desktop = shell.SHGetDesktopFolder()
@@ -383,7 +399,10 @@ class _FS(object):
 
     def _csv_get_startup_files(self, path):
         with open(self.output_dir + self.computer_name + '_startup_files' + self.rand_ext, 'wb') as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_to_csv(["COMPUTER_NAME", "TYPE", "FILENAME", "USER", "MD5", "SHA1", "SHA256"], csv_writer)
             for startup_file in self._get_startup_files(path):
                 write_to_csv(startup_file, csv_writer)

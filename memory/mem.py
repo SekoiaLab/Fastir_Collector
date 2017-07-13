@@ -10,7 +10,7 @@ import sys
 import traceback
 
 import psutil
-from utils.utils import convert_windate, dosdate, get_csv_writer, get_json_writer,write_list_to_csv, write_list_to_json,process_hashes,record_sha256_logs
+from utils.utils import convert_windate, dosdate, get_csv_writer, get_excel_csv_writer, get_json_writer,write_list_to_csv, write_list_to_json,process_hashes,record_sha256_logs
 import win32clipboard
 import win32api
 import win32security
@@ -96,7 +96,7 @@ def timer_open_files(proc,q):
     _Memory.seDebug()
     try:
         q.put(proc.open_files())
-    except: 
+    except:
         q.put(traceback.format_exc())
 
 
@@ -128,6 +128,7 @@ class Process(Process):
 
 class _Memory(object):
     def __init__(self, params):
+        self.output_excel = params['output_excel']
         self.output_dir = params['output_dir']
         self.computer_name = params['computer_name']
         self.logger = params['logger']
@@ -193,7 +194,10 @@ class _Memory(object):
 
     def _csv_all_modules_dll(self):
         with open(self.output_dir + self.computer_name + '_processes_dll' + self.rand_ext, 'wb') as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_all_modules_dll(), csv_writer)
         record_sha256_logs(self.output_dir + self.computer_name + '_processes_dll' + self.rand_ext,
                            self.output_dir + self.computer_name + '_sha256.log')
@@ -250,7 +254,10 @@ class _Memory(object):
     def _csv_all_modules_opened_files(self):
         with open(self.output_dir + self.computer_name + '_processes_opened_files' + self.rand_ext,
                   'wb') as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_all_modules_opened_files(), csv_writer)
         record_sha256_logs(self.output_dir + self.computer_name + '_processes_opened_files' + self.rand_ext,
                            self.output_dir + self.computer_name + '_sha256.log')
@@ -296,7 +303,10 @@ class _Memory(object):
         """Exports the clipboard contents"""
 
         with open(self.output_dir + self.computer_name + '_clipboard' + self.rand_ext, 'wb') as output:
-            csv_writer = get_csv_writer(output)
+            if self.output_excel:
+                csv_writer = get_excel_csv_writer(output)
+            else:
+                csv_writer = get_csv_writer(output)
             write_list_to_csv(self.__get_clipboard(), csv_writer)
         record_sha256_logs(self.output_dir + self.computer_name + '_clipboard' + self.rand_ext,
                            self.output_dir + self.computer_name + '_sha256.log')
