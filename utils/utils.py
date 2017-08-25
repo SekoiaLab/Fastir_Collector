@@ -26,7 +26,8 @@ import json
 import binascii
 
 regex_patern_path = '^(.*/)?(?:$|(.+?)(?:(\.[^.]*$)|$))'
-EXCEL_CELL_SIZE = 30000  # real limit is 32767, but 
+EXCEL_CELL_SIZE = 30000  # real limit is 32767, but
+
 
 class UnicodeJsonDumper:
     """

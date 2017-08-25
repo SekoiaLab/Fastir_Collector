@@ -238,13 +238,12 @@ class _FS(object):
                            self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_list_named_pipes(self, pipes):
-        if self.destination == 'local':
-            with open(self.output_dir + self.computer_name + '_named_pipes' + self.rand_ext, 'wb') as output:
-                json_writer = get_json_writer(output)
-                header = ["COMPUTER_NAME", "TYPE", "NAME"]
-                for pipe in pipes:
-                    write_to_json(header, [self.computer_name, 'named_pipes', pipe], json_writer)
-                close_json_writer(json_writer)
+        with open(self.output_dir + self.computer_name + '_named_pipes' + self.rand_ext, 'wb') as output:
+            json_writer = get_json_writer(output)
+            header = ["COMPUTER_NAME", "TYPE", "NAME"]
+            for pipe in pipes:
+                write_to_json(header, [self.computer_name, 'named_pipes', pipe], json_writer)
+            close_json_writer(json_writer)
         record_sha256_logs(self.output_dir + self.computer_name + '_named_pipes' + self.rand_ext,
                            self.output_dir + self.computer_name + '_sha256.log')
 
@@ -271,27 +270,26 @@ class _FS(object):
                            self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_windows_prefetch(self, wpref):
-        if self.destination == 'local':
-            with open(self.output_dir + self.computer_name + '_prefetch' + self.rand_ext, 'wb') as output:
-                json_writer = get_json_writer(output)
-                header = ["COMPUTER_NAME", "TYPE", "FILE", "VERSION", "SIZE", "EXEC_NAME", "CREATE_TIME",
-                          "MODIFICATION_TIME", "RUN_COUNT", "START_TIME", "DURATION", "AVERAGE_DURATION",
-                          "DLL_LIST"]
-                for pref_file, format_version, file_size, exec_name, tc, tm, run_count, hash_table_a, list_str_c in wpref:
-                    str_c = ''
-                    for s in list_str_c:
-                        str_c += s.replace('\0', '') + ';'
+        with open(self.output_dir + self.computer_name + '_prefetch' + self.rand_ext, 'wb') as output:
+            json_writer = get_json_writer(output)
+            header = ["COMPUTER_NAME", "TYPE", "FILE", "VERSION", "SIZE", "EXEC_NAME", "CREATE_TIME",
+                      "MODIFICATION_TIME", "RUN_COUNT", "START_TIME", "DURATION", "AVERAGE_DURATION",
+                      "DLL_LIST"]
+            for pref_file, format_version, file_size, exec_name, tc, tm, run_count, hash_table_a, list_str_c in wpref:
+                str_c = ''
+                for s in list_str_c:
+                    str_c += s.replace('\0', '') + ';'
 
-                    write_to_json(header, [self.computer_name, 'prefetch', pref_file,
-                                           unicode(format_version), unicode(file_size), exec_name.replace('\00', ''),
-                                           unicode(tc), unicode(tm), unicode(run_count),
-                                           unicode(hash_table_a['start_time']),
-                                           unicode(hash_table_a['duration']), unicode(hash_table_a['average_duration']),
-                                           str_c],
-                                  json_writer)
-                close_json_writer(json_writer)
-            record_sha256_logs(self.output_dir + self.computer_name + '_prefetch' + self.rand_ext,
-                               self.output_dir + self.computer_name + '_sha256.log')
+                write_to_json(header, [self.computer_name, 'prefetch', pref_file,
+                                       unicode(format_version), unicode(file_size), exec_name.replace('\00', ''),
+                                       unicode(tc), unicode(tm), unicode(run_count),
+                                       unicode(hash_table_a['start_time']),
+                                       unicode(hash_table_a['duration']), unicode(hash_table_a['average_duration']),
+                                       str_c],
+                              json_writer)
+            close_json_writer(json_writer)
+        record_sha256_logs(self.output_dir + self.computer_name + '_prefetch' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def _csv_firefox_history(self, fhistory):
         with open(self.output_dir + self.computer_name + '_firefox_history' + self.rand_ext, 'wb') as output:
@@ -329,14 +327,13 @@ class _FS(object):
                            self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_chrome_history(self, chistory):
-        if self.destination == 'local':
-            with open(self.output_dir + self.computer_name + '_chrome_history' + self.rand_ext, 'wb') as output:
-                json_writer = get_json_writer(output)
-                header = ["COMPUTER_NAME", "TYPE", "TIME", "URL", "TITLE", "USER", "PROFILE"]
-                for time, url, title, user, profile in chistory:
-                    write_to_json(header, [self.computer_name, 'chrome_history',
-                                           time, url, title, user, profile], json_writer)
-                close_json_writer(json_writer)
+        with open(self.output_dir + self.computer_name + '_chrome_history' + self.rand_ext, 'wb') as output:
+            json_writer = get_json_writer(output)
+            header = ["COMPUTER_NAME", "TYPE", "TIME", "URL", "TITLE", "USER", "PROFILE"]
+            for time, url, title, user, profile in chistory:
+                write_to_json(header, [self.computer_name, 'chrome_history',
+                                       time, url, title, user, profile], json_writer)
+            close_json_writer(json_writer)
         record_sha256_logs(self.output_dir + self.computer_name + '_chrome_history' + self.rand_ext,
                            self.output_dir + self.computer_name + '_sha256.log')
 
@@ -360,20 +357,19 @@ class _FS(object):
                            self.output_dir + self.computer_name + '_sha256.log')
 
     def json_recycle_bin(self):
-        if self.destination == 'local':
-            with open(self.output_dir + self.computer_name + '_recycle_bin' + self.rand_ext, 'wb') as output:
-                json_writer = get_json_writer(output)
-                header = ["COMPUTER_NAME", "TYPE", "NAME_1", "NAME_2"]
-                idl = shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_BITBUCKET)
-                desktop = shell.SHGetDesktopFolder()
-                files = desktop.BindToObject(idl, None, shell.IID_IShellFolder)
+        with open(self.output_dir + self.computer_name + '_recycle_bin' + self.rand_ext, 'wb') as output:
+            json_writer = get_json_writer(output)
+            header = ["COMPUTER_NAME", "TYPE", "NAME_1", "NAME_2"]
+            idl = shell.SHGetSpecialFolderLocation(0, shellcon.CSIDL_BITBUCKET)
+            desktop = shell.SHGetDesktopFolder()
+            files = desktop.BindToObject(idl, None, shell.IID_IShellFolder)
 
-                for bin_file in files:
-                    write_to_json(header,
-                                  [self.computer_name, 'recycle_bin',
-                                   files.GetDisplayNameOf(bin_file, shellcon.SHGDN_NORMAL),
-                                   files.GetDisplayNameOf(bin_file, shellcon.SHGDN_FORPARSING)], json_writer)
-                close_json_writer(json_writer)
+            for bin_file in files:
+                write_to_json(header,
+                              [self.computer_name, 'recycle_bin',
+                               files.GetDisplayNameOf(bin_file, shellcon.SHGDN_NORMAL),
+                               files.GetDisplayNameOf(bin_file, shellcon.SHGDN_FORPARSING)], json_writer)
+            close_json_writer(json_writer)
         record_sha256_logs(self.output_dir + self.computer_name + '_recycle_bin' + self.rand_ext,
                            self.output_dir + self.computer_name + '_sha256.log')
 

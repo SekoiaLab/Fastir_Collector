@@ -203,10 +203,9 @@ class _Memory(object):
                            self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_all_modules_dll(self):
-        if self.destination == 'local':
-            with open(self.output_dir + self.computer_name + '_processes_dll' + self.rand_ext, 'wb') as output:
-                json_writer = get_json_writer(output)
-                write_list_to_json(self.__get_all_modules_dll(), json_writer)
+        with open(self.output_dir + self.computer_name + '_processes_dll' + self.rand_ext, 'wb') as output:
+            json_writer = get_json_writer(output)
+            write_list_to_json(self.__get_all_modules_dll(), json_writer)
         record_sha256_logs(self.output_dir + self.computer_name + '_processes_dll' + self.rand_ext,
                            self.output_dir + self.computer_name + '_sha256.log')
 
@@ -263,13 +262,12 @@ class _Memory(object):
                            self.output_dir + self.computer_name + '_sha256.log')
 
     def _json_all_modules_opened_files(self):
-        if self.destination == 'local':
-            with open(self.output_dir + self.computer_name + '_processes_opened_files' + self.rand_ext,
-                      'wb') as output:
-                json_writer = get_json_writer(output)
-                write_list_to_json(self.__get_all_modules_opened_files(), json_writer)
-            record_sha256_logs(self.output_dir + self.computer_name + '_processes_opened_files' + self.rand_ext,
-                               self.output_dir + self.computer_name + '_sha256.log')
+        with open(self.output_dir + self.computer_name + '_processes_opened_files' + self.rand_ext,
+                  'wb') as output:
+            json_writer = get_json_writer(output)
+            write_list_to_json(self.__get_all_modules_opened_files(), json_writer)
+        record_sha256_logs(self.output_dir + self.computer_name + '_processes_opened_files' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
     def __get_clipboard(self):
         self.logger.info('Getting clipboard contents')
@@ -312,12 +310,11 @@ class _Memory(object):
                            self.output_dir + self.computer_name + '_sha256.log')
 
     def json_clipboard(self):
-        if self.destination == 'local':
-            with open(self.output_dir + self.computer_name + '_clipboard' + self.rand_ext, 'wb') as output:
-                json_writer = get_json_writer(output)
-                write_list_to_json(self.__get_clipboard(), json_writer)
-            record_sha256_logs(self.output_dir + self.computer_name + '_clipboard' + self.rand_ext,
-                               self.output_dir + self.computer_name + '_sha256.log')
+        with open(self.output_dir + self.computer_name + '_clipboard' + self.rand_ext, 'wb') as output:
+            json_writer = get_json_writer(output)
+            write_list_to_json(self.__get_clipboard(), json_writer)
+        record_sha256_logs(self.output_dir + self.computer_name + '_clipboard' + self.rand_ext,
+                           self.output_dir + self.computer_name + '_sha256.log')
 
         # 	def csv_dns_cache(self):
         # 		if get_architecture()=='86':

@@ -93,31 +93,30 @@ class _EventLogs(object):
 
     def _json_event_logs(self, is_win_xp):
         server = None  # name of the target computer to get event logs, None to get logs from current computer
-        if self.destination == 'local':
-            with open(self.output_dir + '\\' + self.computer_name + '_evts' + self.rand_ext, 'wb') as fw:
-                json_writer = get_json_writer(fw)
-                header = ['COMPUTER', 'TYPE', 'SOURCE', 'CATEGORY', 'SOURCE NAME', 'ID', 'EVENT_TYPE', 'LOG']
-                if is_win_xp:
-                    for eventCategory, sourceName, eventID, eventType, date, log in self._list_evt_xp(server, 'Security'):
-                        write_to_json(header, [self.computer_name, 'Logs', 'Security', eventCategory, sourceName,
-                                               eventID, eventType, date] + log, json_writer)
-                    for eventCategory, sourceName, eventID, eventType, date, log in self._list_evt_xp(server,
-                                                                                                      'Application'):
-                        write_to_json(header,
-                                      [self.computer_name, 'Logs', 'Application', eventCategory, sourceName, eventID,
-                                       eventType, date, log], json_writer)
-                    for eventCategory, sourceName, eventID, eventType, date, log in self._list_evt_xp(server, 'System'):
-                        write_to_json(header, [self.computer_name, 'Logs', 'System', eventCategory, sourceName, eventID,
-                                               eventType, date, log], json_writer)
-                else:
-                    # Exports everything from the event viewer
-                    evt_handle = win32evtlog.EvtOpenChannelEnum()
-                    os.mkdir(self.output_dir + r"\evt")
-                    while True:
-                        # opening channel for enumeration
-                        logtype = win32evtlog.EvtNextChannelPath(evt_handle)
-                        if logtype is None:
-                            break
-                            # fw.write('"Computer Name"|"Type"|"Date"|"logtype"|"log data"\n')
-                        self._list_evt_vista(server, logtype)
-                close_json_writer(json_writer)
+        with open(self.output_dir + '\\' + self.computer_name + '_evts' + self.rand_ext, 'wb') as fw:
+            json_writer = get_json_writer(fw)
+            header = ['COMPUTER', 'TYPE', 'SOURCE', 'CATEGORY', 'SOURCE NAME', 'ID', 'EVENT_TYPE', 'LOG']
+            if is_win_xp:
+                for eventCategory, sourceName, eventID, eventType, date, log in self._list_evt_xp(server, 'Security'):
+                    write_to_json(header, [self.computer_name, 'Logs', 'Security', eventCategory, sourceName,
+                                           eventID, eventType, date] + log, json_writer)
+                for eventCategory, sourceName, eventID, eventType, date, log in self._list_evt_xp(server,
+                                                                                                  'Application'):
+                    write_to_json(header,
+                                  [self.computer_name, 'Logs', 'Application', eventCategory, sourceName, eventID,
+                                   eventType, date, log], json_writer)
+                for eventCategory, sourceName, eventID, eventType, date, log in self._list_evt_xp(server, 'System'):
+                    write_to_json(header, [self.computer_name, 'Logs', 'System', eventCategory, sourceName, eventID,
+                                           eventType, date, log], json_writer)
+            else:
+                # Exports everything from the event viewer
+                evt_handle = win32evtlog.EvtOpenChannelEnum()
+                os.mkdir(self.output_dir + r"\evt")
+                while True:
+                    # opening channel for enumeration
+                    logtype = win32evtlog.EvtNextChannelPath(evt_handle)
+                    if logtype is None:
+                        break
+                        # fw.write('"Computer Name"|"Type"|"Date"|"logtype"|"log data"\n')
+                    self._list_evt_vista(server, logtype)
+            close_json_writer(json_writer)
