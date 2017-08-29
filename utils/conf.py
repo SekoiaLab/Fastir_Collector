@@ -36,16 +36,17 @@ class CustomConf:
             'type': 'csv',
             'destination': 'local',
             'dir': 'output',
+            'share_dir': 'fastir_output',
             'excel': 'False',
         }
         defaults['filecatcher'] = {
             'all_users': 'True',
             'path': '%USERPROFILE%/AppData|*',
             'mime_filter': 'application/msword;application/octet-stream;application/x-archive;application/x-ms-pe;'
-                            'application/x-ms-dos-executable;application/x-lha;application/x-dosexec;application/x-elc;'
-                            'application/x-executable,statically linked, stripped;application/x-gzip;application/x-object,'
-                            'not stripped;application/x-zip;text/html;text/rtf;text/xml;UTF-8 Unicode HTML document text,'
-                            'with CRLF line terminators;UTF-8 Unicode HTML document text, with very long lines, with CRLF, LF line terminators',
+                           'application/x-ms-dos-executable;application/x-lha;application/x-dosexec;application/x-elc;'
+                           'application/x-executable,statically linked, stripped;application/x-gzip;application/x-object,'
+                           'not stripped;application/x-zip;text/html;text/rtf;text/xml;UTF-8 Unicode HTML document text,'
+                           'with CRLF line terminators;UTF-8 Unicode HTML document text, with very long lines, with CRLF, LF line terminators',
             'mime_zip': 'application/x-ms-pe;application/x-ms-dos-executable;application/x-dosexec;application/x-executable, statically linked, stripped',
             'compare': 'AND',
             'size_min': '1k',

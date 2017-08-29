@@ -29,15 +29,13 @@ class _FileCatcher(object):
         self.ext_file = params['ext_file'].split(',')
         self.logger = params['logger']
         self.compare = params['compare']
-        self.filtered_certificates = yaml.load(params['filtered_certificates'])
-        self.filtered_yara = yaml.load(params['filtered_yara'])
+        self.filtered_certificates = yaml.safe_load(params['filtered_certificates'])
+        self.filtered_yara = yaml.safe_load(params['filtered_yara'])
         self.limit_days = params['limit_days']
         self.rand_ext = params['rand_ext']
         self.zip_file = None
         if self.zip:
             self.zip_file = _Archives(self.output_dir + '\\' + self.computer_name + '_files_.zip', self.logger)
-        if 'destination' in params:
-            self.destination = params['destination']
 
     def _list_files(self):
         pe = None

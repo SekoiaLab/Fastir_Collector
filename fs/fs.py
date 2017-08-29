@@ -26,8 +26,6 @@ class _FS(object):
         self.output_dir = params['output_dir']
         self.logger = params['logger']
         self.rand_ext = params['rand_ext']
-        if 'destination' in params:
-            self.destination = params['destination']
 
     def _list_named_pipes(self):
         for p in look_for_files('\\\\.\\pipe\\*'):

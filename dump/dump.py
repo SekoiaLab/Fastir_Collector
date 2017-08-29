@@ -6,7 +6,6 @@ import os
 import struct
 import time
 import win32file
-import yaml
 import glob
 from _analyzemft.mftsession import _MftSession
 from disk_analysis import DiskAnalysis
@@ -20,12 +19,13 @@ from winpmem import _Image
 from filecatcher.archives import _Archives
 from utils.vss import _VSS
 
+
 class _Dump(object):
     def __init__(self, params):
         self.computer_name = params['computer_name']
         self.output_dir = params['output_dir']
         self.logger = params['logger']
-        self.mft_export = yaml.load(params['mft_export'])
+        self.mft_export = params['mft_export']
         self.rand_ext = params['rand_ext']
         self.userprofile = params['USERPROFILE']
         self.params = params
@@ -193,8 +193,8 @@ class _Dump(object):
                             os.path.isfile(os.path.join(self.root_reg, f))]
             path_ntuserdat = os.path.join(self.userprofile, '*', 'NTUSER.DAT')
             files_to_zip.extend([os.path.join(_VSS._get_instance(self.params, os.path.splitdrive(f)[0])._return_root(),
-                                              os.path.splitdrive(f)[1].lstrip('\\')) for f in glob.glob(path_ntuserdat) if
-                                 os.path.isfile(f)])
+                                              os.path.splitdrive(f)[1].lstrip('\\')) for f in glob.glob(path_ntuserdat)
+                                 if os.path.isfile(f)])
             for f in files_to_zip:
                 arch.record(f)
 

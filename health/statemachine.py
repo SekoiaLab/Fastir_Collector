@@ -24,8 +24,6 @@ class _Statemachine(object):
         self.systemroot = params['system_root']
         self.logger = params['logger']
         self.rand_ext = params['rand_ext']
-        if 'destination' in params:
-            self.destination = params['destination']
 
     def _list_network_drives(self):
         for disk in self.wmi.Win32_LogicalDisk(DriveType=4):

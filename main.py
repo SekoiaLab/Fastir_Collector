@@ -23,7 +23,8 @@ import factory.factory as factory
 import settings
 from settings import EXTRACT_DUMP, USERS_FOLDER
 from utils.conf import CustomConf
-from utils.utils import change_char_set_os_environ, get_os_version, mount_share, unmount_share
+from utils.utils import change_char_set_os_environ, get_os_version, mount_share, unmount_share, look_for_files, \
+                        zip_archive, delete_dir
 from utils.vss import _VSS
 
 
@@ -96,10 +97,8 @@ def set_environment_options(param_options):
         for entry in param_options["fs"].split(","):
             d = entry.split('|')[0]
             depth = entry.split('|')[1]
-            reg_env = re.compile("%([^%]*)%")
-            result = reg_env.match(d)
-            if result:
-                env_var = result.group(1)
+            env_var = replace_env(d)
+            if env_var:
                 if env_var in user_env_var:
                     if param_options["all_users"]:
                         path = d.replace("%" + env_var + "%", os.environ[env_var])
@@ -135,11 +134,15 @@ def profile_used(paths, param_options):
     param_options["packages"] = [p.lower() for p in config.get("profiles", "packages").split(",")]
 
     param_options["output_type"] = config.get("output", "type")
-    param_options["output_destination"] = config.get("output", "destination")
     param_options["output_dir"] = config.get("output", "dir")
-    param_options["output_excel"] = yaml.load(config.get("output", "excel"))
+    param_options["output_excel"] = yaml.safe_load(config.get("output", "excel"))
     if config.has_option("output", "share"):
         param_options["output_share"] = config.get("output", "share")
+
+    if config.has_option("output", "share_dir"):
+        param_options["share_dir"] = config.get("output", "share_dir")
+    else:
+        param_options["share_dir"] = None
 
     if config.has_option("output", "share_login"):
         param_options["share_login"] = config.get("output", "share_login")
@@ -150,10 +153,12 @@ def profile_used(paths, param_options):
         param_options["share_password"] = config.get("output", "share_password")
     else:
         param_options["share_password"] = None
+
     if config.has_option('output', 'destination'):
         param_options['destination'] = config.get('output', 'destination')
     else:
         param_options['destination'] = 'local'
+
     if config.has_section("filecatcher"):
         param_options["size_min"] = config.get("filecatcher", "size_min")
         param_options["size_max"] = config.get("filecatcher", "size_max")
@@ -163,23 +168,23 @@ def profile_used(paths, param_options):
         param_options["zip"] = config.get("filecatcher", "zip")
         param_options["ext_file"] = config.get("filecatcher", "ext_file")
         param_options["zip_ext_file"] = config.get("filecatcher", "zip_ext_file")
-        param_options["all_users"] = yaml.load(config.get("filecatcher", "all_users"))
+        param_options["all_users"] = yaml.safe_load(config.get("filecatcher", "all_users"))
         param_options['compare'] = config.get('filecatcher', 'compare')
         param_options['limit_days'] = config.get('filecatcher', 'limit_days')
 
     if config.has_section("dump"):
         param_options["dump"] = config.get("dump", "dump")
         if config.has_option('dump', 'mft_export'):
-            param_options["mft_export"] = config.get("dump", "mft_export")
+            param_options["mft_export"] = yaml.safe_load(config.get("dump", "mft_export"))
         else:
             param_options["mft_export"] = True
 
     if config.has_section("registry"):
         if config.has_option("registry", "custom_registry_keys"):
             param_options["custom_registry_keys"] = config.get("registry", "custom_registry_keys")
-            param_options["registry_recursive"] = yaml.load(config.get("registry", "registry_recursive"))
+            param_options["registry_recursive"] = yaml.safe_load(config.get("registry", "registry_recursive"))
         if config.has_option('registry', 'get_autoruns'):
-            param_options["get_autoruns"] = yaml.load(config.get('registry', "get_autoruns"))
+            param_options["get_autoruns"] = yaml.safe_load(config.get('registry', "get_autoruns"))
         else:
             param_options["get_autoruns"] = False
     else:
@@ -191,7 +196,7 @@ def profile_used(paths, param_options):
                 param_options[module_option] = config.get(mod, module_option)
     if config.has_section('extension'):
         if config.has_option('extension', 'random'):
-            if yaml.load(config.get("extension", "random")):
+            if yaml.safe_load(config.get("extension", "random")):
                 param_options["rand_ext"] = "." + "".join(
                     [random.SystemRandom().choice(string.ascii_lowercase) for _ in xrange(5)])
             else:
@@ -215,28 +220,39 @@ def create_dir(dir_create):
         pass
 
 
-def create_output_dir(output_dir, letter=None):
+def create_output_dir(output_dir):
     """Creates 'output_dir' recursively"""
-    reg_env = re.compile("%([^%]*)%")
-    result = reg_env.match(output_dir)
-    if result:
-        env_var = result.group(1)
+    env_var = replace_env(output_dir)
+    if env_var:
         try:
             output_dir = output_dir.replace("%" + env_var + "%", os.environ[env_var])
         except KeyError:
             sys.stderr.write("Environment variable '%s' doesn't exist\n" % env_var)
             sys.stderr.write("'%s' doesn't exist\n" % output_dir)
-            unmount_share(letter)
             sys.exit(1)
 
-    if letter:
-        output_dir = letter + os.path.sep + output_dir + os.path.sep + datetime.now().strftime(
-                "%Y-%m-%d_%H%M%S") + os.path.sep
-    else:
-        output_dir = output_dir + os.path.sep + datetime.now().strftime("%Y-%m-%d_%H%M%S") + os.path.sep
+    output_dir = output_dir + os.path.sep + datetime.now().strftime("%Y-%m-%d_%H%M%S") + os.path.sep
     create_dir(output_dir)
 
     return output_dir
+
+
+def replace_env(env_string):
+    reg_env = re.compile("%([^%]*)%")
+    result = reg_env.match(env_string)
+    if result:
+        result = result.group(1)
+    return result
+
+
+def create_share_dir(output_share, share_dir):
+    if share_dir:
+        share_dir = os.path.join(output_share, share_dir, datetime.now().strftime("%Y-%m-%d_%H%M%S"))
+    else:
+        share_dir = os.path.join(output_share, datetime.now().strftime("%Y-%m-%d_%H%M%S"))
+
+        create_dir(share_dir)
+    return share_dir
 
 
 def parse_command_line():
@@ -347,14 +363,17 @@ def set_options():
     # Set options based on environment
     param_options = set_environment_options(param_options)
 
-    # if share and output are both specified, create output folder in share
+    # if share is specified, also created remote directory
     try:
-        if "output_share" in param_options:
+        if param_options["destination"] == "share":
             mount_letter = mount_share(param_options["output_share"],
                                        param_options["share_login"],
                                        param_options["share_password"])
-            param_options["output_dir"] = create_output_dir(param_options["output_dir"], mount_letter)
             param_options["mount_letter"] = mount_letter
+            if mount_letter:
+                create_share_dir(mount_letter, param_options["output_dir"])
+            else:
+                create_share_dir(param_options["output_share"], param_options["output_dir"])
         else:
             param_options["output_dir"] = create_output_dir(os.path.join(os.path.dirname(__file__),
                                                                          param_options["output_dir"]))
@@ -417,8 +436,12 @@ def main(param_options):
     # Delete all shadow copies created during the acquisition process
     _VSS._close_instances()
 
-    if "mount_letter" in param_options:
-        unmount_share(param_options["mount_letter"])
+    if param_options["destination"] == "share":
+        report_files = look_for_files(param_options["output_dir"])
+        zip_archive(report_files, param_options["output_share"], "fastIR_report", param_options["logger"])
+        delete_dir(param_options["output_dir"])
+        if "mount_letter" not in param_options:
+            unmount_share(param_options["output_share"])
 
     param_options['logger'].info('Check here %s for yours results' % os.path.abspath(param_options['output_dir']))
 

@@ -12,7 +12,6 @@ import sys
 import datetime
 import glob
 import hashlib
-from string import ascii_uppercase
 import zipfile
 import wmi
 import shutil
@@ -167,46 +166,44 @@ def decode_output_cmd(output):
 
 
 def mount_share(share_path, param_username, param_password):
-    """Uses the pywin32 library to mount a share and updates the filename"""
+    """ Uses the pywin32 library to mount a share and updates the filename.
+        If a resource leading to the share path is found, the path is updated.
+        "return: None if no resource is found, the local path otherwise.
+    """
     # check if such a path has already been mounted
-    print "Mounting the share " + share_path
+    print("Mounting the share " + share_path)
     handle = win32wnet.WNetOpenEnum(win32netcon.RESOURCE_CONNECTED, win32netcon.RESOURCETYPE_DISK, 0, None)
     resources = win32wnet.WNetEnumResource(handle)
     is_mounted = False
-    used_letters = ""
-    letter = None
     for resource in resources:
         if share_path == resource.lpRemoteName and resource.lpLocalName:
             # found a mounted drive with the same path so we set the correct letter
             # lpLocalName is None when the mount does not redirect a local device
             # we do not want to consider such a mount
             is_mounted = True
-            letter = resource.lpLocalName
-        if resource.lpLocalName:
-            used_letters += resource.lpLocalName  # append so we can search a free letter later
+            share_path = resource.lpLocalName
+            break
+
     win32wnet.WNetCloseEnum(handle)
     if not is_mounted:
-        for letter in ascii_uppercase[::-1]:
-            if letter not in used_letters:
-                letter += ":"
-                break
         net_resource = win32wnet.NETRESOURCE()
         net_resource.dwType = win32netcon.RESOURCETYPE_DISK
-        net_resource.lpLocalName = letter
+        net_resource.lpLocalName = None
         net_resource.lpRemoteName = share_path
         net_resource.lpProvider = None
         win32wnet.WNetAddConnection2(net_resource, param_username, param_password)
-        print("Share successfully mounted with letter %s " % letter)
-    return letter
+        print("Share successfully mounted")
+        share_path = None
+    return share_path
 
 
-def unmount_share(letter):
+def unmount_share(share_path):
     """Unmount the share designed by the letter"""
-    if letter:
-        print("Unmounting share %s" % letter)
+    if share_path:
+        print("Unmounting share")
         try:
-            win32wnet.WNetCancelConnection2(letter, 1, 1)  # force unmap
-            print("Share %s successfully unmounted" % letter)
+            win32wnet.WNetCancelConnection2(share_path, 0, 1)  # force unmap
+            print("Share successfully unmounted")
         except win32wnet.error:
             print("Cannot unmount specified share")
 
@@ -392,6 +389,10 @@ def is_running(name):
         return service, True
     else:
         return service, False
+
+
+def delete_dir(dir_path):
+    shutil.rmtree(dir_path)
 
 
 def copy_file(root, path, dest):

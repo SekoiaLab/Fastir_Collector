@@ -133,8 +133,6 @@ class _Memory(object):
         self.computer_name = params['computer_name']
         self.logger = params['logger']
         self.rand_ext = params['rand_ext']
-        if 'destination' in params:
-            self.destination = params['destination']
 
     @staticmethod
     def seDebug():

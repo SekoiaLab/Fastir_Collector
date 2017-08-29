@@ -275,8 +275,6 @@ class _Reg(object):
         if params["output_dir"] and params["computer_name"]:
             self.computer_name = params["computer_name"]
             self.output_dir = params["output_dir"]
-        if params['destination']:
-            self.destination = params['destination']
         if params["custom_registry_keys"]:
             self.exec_custom_registry_keys = True
             self.custom_registry_keys = params["custom_registry_keys"]

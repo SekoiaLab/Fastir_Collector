@@ -17,8 +17,6 @@ class _EventLogs(object):
         self.computer_name = params['computer_name']
         self.logger = params['logger']
         self.rand_ext = params['rand_ext']
-        if 'destination' in params:
-            self.destination = params['destination']
 
     def _list_evt_vista(self, _, logtype):
         """Retrieves the contents of the event log for Windows Vista and later"""
