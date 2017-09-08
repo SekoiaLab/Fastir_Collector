@@ -1,7 +1,7 @@
 construct==2.5.2
 distorm3==3.3.4
 hexdump==3.3
-psutil==5.2.0
+psutil==3.4.2
 pypiwin32==219
 pytz==2016.10
 PyYAML==3.12
