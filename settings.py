@@ -68,5 +68,6 @@ USERS_FOLDER = {
     "Windows2008ServerR2": os.path.join(os.getenv('HOMEDRIVE', 'C:'), '\\Users'),
     "Windows2008Server": os.path.join(os.getenv('HOMEDRIVE', 'C:'), '\\Users'),
     "Windows2003Server": os.path.join(os.getenv('HOMEDRIVE', 'C:'), '\\Documents and Settings'),
-    "Windows2003ServerR2": os.path.join(os.getenv('HOMEDRIVE', 'C:'), '\\Documents and Settings')
+    "Windows2003ServerR2": os.path.join(os.getenv('HOMEDRIVE', 'C:'), '\\Documents and Settings'),
+    "Windows2016Server": os.path.join(os.getenv('HOMEDRIVE', 'C:'), '\\Users')
 }
