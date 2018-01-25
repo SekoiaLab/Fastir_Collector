@@ -94,9 +94,6 @@ class Windows2016ServerStateMachine(_Statemachine):
     def json_list_running_proccess(self):
         super(Windows2016ServerStateMachine, self)._json_list_running_process(self._list_running())
 
-    def json_get_ppid(self):
-        super(Windows2016ServerStateMachine, self)._json_get_ppid(self._list_running())
-
     def json_hash_running_proccess(self):
         super(Windows2016ServerStateMachine, self)._json_hash_running_process(self._list_running())
 
